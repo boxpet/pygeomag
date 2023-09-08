@@ -1,3 +1,6 @@
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/5uMninjUXjCnNMzvVzq9EJ/A7hoBacfgFtGdDUiyiXcBy/tree/main.svg?style=svg&circle-token=13df862914431a3f89a9bc1bcc8bb5b2a177d815)](https://dl.circleci.com/status-badge/redirect/circleci/5uMninjUXjCnNMzvVzq9EJ/A7hoBacfgFtGdDUiyiXcBy/tree/main)
+[![codecov](https://codecov.io/gh/boxpet/pygeomag/graph/badge.svg?token=ECHON65OG8)](https://codecov.io/gh/boxpet/pygeomag)
+
 # pyGeoMag
 
 pyGeoMag is an implementation in Python of the
