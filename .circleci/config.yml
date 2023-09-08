@@ -1,0 +1,26 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - run:
+          name:  Install dependencies
+          command: pip install pre-commit pytest pytest-cov
+      - run:
+          name: pre-commit
+          command: pre-commit run --all-files
+      - run:
+          name: Run tests
+          command: pytest --junitxml=test-results/junit.xml --cov --cov-report=xml test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
+workflows:
+  test:
+    jobs:
+      - test
