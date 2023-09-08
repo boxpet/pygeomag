@@ -1,0 +1,2 @@
+recursive-exclude test *
+include pygeomag/wmm/*.COF
