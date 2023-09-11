@@ -2,7 +2,22 @@ import math
 
 
 class GeoMagResult:
-    """The result values from 'GeoMag.calculate()'."""
+    """
+    The Magnetic Components values from ``GeoMag.calculate()``.
+
+    - **glat** *(float)* – Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
+    - **glon** *(float)* – Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
+    - **alt** *(float)* – Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
+    - **time** *(float)* – Time (in decimal year), 2020.0 to 2025.0
+    - **f**, **.ti**, **.total_intensity** *(float)* – Total Intensity
+    - **h** *(float)* – Horizontal Intensity
+    - **x** *(float)* – North Component
+    - **y** *(float)* – East Component
+    - **z** *(float)* – Vertical Component
+    - **i**, **.dip**, **.inclination** *(float)* – Geomagnetic Inclination
+    - **d**, **.dec** *(float)* – Geomagnetic Declination (Magnetic Variation)
+    - **gv** *(float)* – Magnetic grid variation if the current geodetic position is in the arctic or antarctic
+    """
 
     def __init__(self, time, alt, glat, glon):
         self.time = time
@@ -68,7 +83,22 @@ class GeoMag:
         self.k = None
 
     def calculate(self, glat, glon, alt, time, allow_date_past_lifespan=False):
-        """Calculate the Magnetic Components from a latitude, longitude, altitude and date."""
+        """
+        Calculate the Magnetic Components from a latitude, longitude, altitude and date.
+
+        :param float glat: Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
+        :param float glon: Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
+        :param float alt: Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
+        :param float time: Time (in decimal year), 2020.0 to 2025.0
+        :param bool allow_date_past_lifespan: True, if you want an estimation outside of the 5 year life span
+        :return type: GeoMagResult
+
+        >>> from pygeomag import GeoMag
+        >>> geo_mag = GeoMag()
+        >>> result = geo_mag.calculate(glat=39.9938, glon=-105.2603, alt=0, time=2023.75)
+        >>> print(result.d)
+        7.85173924057477
+        """
         tc = self.create_matrix(13, 13)
         dp = self.create_matrix(13, 13)
         sp = self.create_list(13)

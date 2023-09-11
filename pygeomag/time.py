@@ -2,7 +2,15 @@ SECONDS_PER_DAY = 86400
 
 
 def decimal_year_from_struct_time(date):
-    """Calculate the decimal year (2022.5) from a 'time.struct_time'."""
+    """
+    Calculate the decimal year (2022.5) from a 'time.struct_time'.
+
+    >>> import time
+    >>> from pygeomag import decimal_year_from_struct_time
+    >>> value = time.struct_time((2020, 7, 2, 0, 0, 0, 0, 0, 0))
+    >>> decimal_year_from_struct_time(value)
+    2020.5
+    """
     # Inline imports to not fail on lightweight versions of Python
     import time
 
@@ -19,7 +27,15 @@ def decimal_year_from_struct_time(date):
 
 
 def decimal_year_from_date(date):
-    """Calculate the decimal year (2022.5) from a 'datetime.date' or 'datetime.datetime'."""
+    """
+    Calculate the decimal year (2022.5) from a 'datetime.date' or 'datetime.datetime'.
+
+    >>> import datetime
+    >>> from pygeomag import decimal_year_from_date
+    >>> value = datetime.datetime(2020, 7, 2)
+    >>> decimal_year_from_date(value)
+    2020.5
+    """
     # Inline imports to not fail on lightweight versions of Python
     import datetime
 
@@ -34,7 +50,16 @@ def decimal_year_from_date(date):
 
 
 def calculate_decimal_year(date):
-    """Calculate the decimal year (2022.5) from a value (i.e. 'datetime.datetime' or 'time.struct_time')."""
+    """
+    Calculate the decimal year (2022.5) from a value (i.e. 'datetime.datetime' or 'time.struct_time').
+
+    If you know using either date format will work in your version of Python, you can use this wrapper method.
+
+    >>> import datetime
+    >>> from pygeomag import calculate_decimal_year
+    >>> calculate_decimal_year(datetime.datetime(2020, 7, 2))
+    2020.5
+    """
     # Inline imports to not fail on lightweight versions of Python
     import datetime
     import time
