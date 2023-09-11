@@ -10,7 +10,13 @@ def round_precision(value, precision=0):
 
 
 def decimal_degrees_to_degrees_minutes(value):
-    """Convert decimal degrees (45.7625) to degrees and minutes (45, 45.75)."""
+    """
+    Convert decimal degrees to degrees and minutes.
+
+    >>> from pygeomag import decimal_degrees_to_degrees_minutes
+    >>> decimal_degrees_to_degrees_minutes(45.7625)
+    (45, 45.75)
+    """
     if not isinstance(value, (int, float)):
         raise TypeError("value is not a number")
 
@@ -21,7 +27,13 @@ def decimal_degrees_to_degrees_minutes(value):
 
 
 def decimal_degrees_to_degrees_minutes_seconds(value):
-    """Convert decimal degrees (45.7625) to degrees, minutes and seconds (45, 45, 45.0)."""
+    """
+    Convert decimal degrees to degrees, minutes and seconds.
+
+    >>> from pygeomag import decimal_degrees_to_degrees_minutes_seconds
+    >>> decimal_degrees_to_degrees_minutes_seconds(45.7625)
+    (45, 45, 45.0)
+    """
     degrees, decimal_minutes = decimal_degrees_to_degrees_minutes(value)
     minutes = int(decimal_minutes)
     seconds = round_precision((float(decimal_minutes) - minutes) * 60, 12)
@@ -30,7 +42,13 @@ def decimal_degrees_to_degrees_minutes_seconds(value):
 
 
 def degrees_minutes_seconds_to_decimal_degrees(degrees, minutes, seconds):
-    """Convert degrees, minutes and seconds (45, 45, 45) to decimal degrees (45.7625)."""
+    """
+    Convert degrees, minutes and seconds  to decimal degrees.
+
+    >>> from pygeomag import degrees_minutes_seconds_to_decimal_degrees
+    >>> degrees_minutes_seconds_to_decimal_degrees(45, 45, 45)
+    45.7625
+    """
     if not isinstance(degrees, (int, float)):
         raise TypeError("degrees is not a number")
     if not isinstance(minutes, (int, float)):
@@ -42,7 +60,13 @@ def degrees_minutes_seconds_to_decimal_degrees(degrees, minutes, seconds):
 
 
 def degrees_minutes_to_decimal_degrees(degrees, minutes):
-    """Convert degrees and minutes (45, 45.75) to decimal degrees (45.7625)."""
+    """
+    Convert degrees and minutes  to decimal degrees (45.7625).
+
+    >>> from pygeomag import degrees_minutes_to_decimal_degrees
+    >>> degrees_minutes_to_decimal_degrees(45, 45.75)
+    45.7625
+    """
     if not isinstance(degrees, (int, float)):
         raise TypeError("degrees is not a number")
     if not isinstance(minutes, (int, float)):
