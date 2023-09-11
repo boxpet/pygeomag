@@ -79,12 +79,20 @@ def pretty_print_degrees(value, is_latitude, show_seconds=False, verbose=False, 
     """
     Format decimal degrees into a human-readable string.
 
-    :param value: (float, int) Decimal degrees you want converted
-    :param is_latitude: (bool) True for latitude, False for longitude
-    :param show_seconds: (bool) True to show seconds, False for just degrees and minutes
-    :param verbose: (bool) True to use full words like "North", False for single characters like "N"
-    :param precision: (int) The amount of digits to round the last value to
-    :return: (str) human-readable string
+    :param float, int value: Decimal degrees you want converted
+    :param bool is_latitude: True for latitude, False for longitude
+    :param bool show_seconds: True to show seconds, False for just degrees and minutes
+    :param bool verbose: True to use full words like "North", False for single characters like "N"
+    :param int precision: The amount of digits to round the last value to
+    :return: Human-readable string
+
+    >>> from pygeomag import pretty_print_degrees
+    >>> pretty_print_degrees(value=45.7625, is_latitude=True)
+    "45° 46' N"
+    >>> pretty_print_degrees(value=45.7625, is_latitude=True, precision=2)
+    "45° 45.75' N"
+    >>> pretty_print_degrees(value=45.7625, is_latitude=True, verbose=True, precision=2)
+    '45 Degrees 45.75 Minutes North'
     """
     if show_seconds:
         degrees, minutes, seconds = decimal_degrees_to_degrees_minutes_seconds(value)

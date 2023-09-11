@@ -14,9 +14,9 @@
    :target: https://github.com/psf/black
    :alt: Code style: Black
 
-########
-pyGeoMag
-########
+####################################
+Welcome to pyGeoMag's documentation!
+####################################
 
 pyGeoMag is an implementation in Python of the `World Magnetic Model (WMM)
 <https://www.ncei.noaa.gov/products/world-magnetic-model>`_.
@@ -49,100 +49,13 @@ Example
 
 Calculate the geomagnetic declination for the NOAA office in Boulder, CO.
 
-**Input Parameters**
-
-- ``glat`` (Geodetic Latitude): -90.00 to +90.00 degrees (North positive, South negative)
-- ``glon`` (Geodetic Longitude): -180.00 to +180.00 degrees (East positive, West negative)
-- ``alt`` (Altitude): -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
-- ``time`` (Time in decimal year): 2020.0 to 2025.0
-
-**Magnetic Components (output)**
-
-- ``result.f`` (``.ti``, ``.total_intensity``): Total Intensity
-- ``result.h``: Horizontal Intensity
-- ``result.x``: North Component
-- ``result.y``: East Component
-- ``result.z``:  Vertical Component
-- ``result.i`` (``.dip``, ``.inclination``): Geomagnetic Inclination
-- ``result.d`` (``.dec``): Geomagnetic Declination (Magnetic Variation)
-- ``result.gv``: Magnetic grid variation if the current geodetic position is in the arctic or antarctic
-
 .. code-block:: pycon
 
    >>> from pygeomag import GeoMag
    >>> geo_mag = GeoMag()
    >>> result = geo_mag.calculate(glat=39.9938, glon=-105.2603, alt=0, time=2023.75)
    >>> print(result.d)
-   7.848099459256507
-
-*****
-Utils
-*****
-
-Date utils
-==========
-
-There are methods for converting both a ``time.struct_time``, ``datetime.date`` and ``datetime.datetime`` object to a
-decimal year:
-
-.. code-block:: pycon
-
-   >>> import time
-   >>> from pygeomag import decimal_year_from_struct_time
-   >>> value = time.struct_time((2020, 7, 2, 0, 0, 0, 0, 0, 0))
-   >>> decimal_year_from_struct_time(value)
-   2020.5
-
-   >>> import datetime
-   >>> from pygeomag import decimal_year_from_date
-   >>> value = datetime.datetime(2020, 7, 2)
-   >>> decimal_year_from_date(value)
-   2020.5
-
-If you know using either date format will work in your version of Python, you can
-use the wrapper method:
-
-.. code-block:: pycon
-
-   >>> import datetime
-   >>> from pygeomag import calculate_decimal_year
-   >>> decimal_year_from_date(datetime.datetime(2020, 7, 2))
-   2020.5
-
-Formatting utils
-================
-
-There are methods from going between decimal degrees and degrees minutes and seconds:
-
-.. code-block:: pycon
-
-   >>> from pygeomag import decimal_degrees_to_degrees_minutes
-   >>> decimal_degrees_to_degrees_minutes(45.7625)
-   (45, 45.75)
-
-   >>> from pygeomag import decimal_degrees_to_degrees_minutes_seconds
-   >>> decimal_degrees_to_degrees_minutes_seconds(45.7625)
-   (45, 45, 45.0)
-
-   >>> from pygeomag import degrees_minutes_seconds_to_decimal_degrees
-   >>> degrees_minutes_seconds_to_decimal_degrees(45, 45, 45)
-   45.7625
-
-   >>> from pygeomag import degrees_minutes_to_decimal_degrees
-   >>> degrees_minutes_to_decimal_degrees(45, 45.75)
-   45.7625
-
-And also one to take decimal degrees and print it in a more human-readable format:
-
-.. code-block:: pycon
-
-   >>> from pygeomag import pretty_print_degrees
-   >>> pretty_print_degrees(value=45.7625, is_latitude=True)
-   "45° 46' N"
-   >>> pretty_print_degrees(value=45.7625, is_latitude=True, precision=2)
-   "45° 45.75' N"
-   >>> pretty_print_degrees(value=45.7625, is_latitude=True, verbose=True, precision=2)
-   '45 Degrees 45.75 Minutes North'
+   7.85173924057477
 
 *******
 Testing
