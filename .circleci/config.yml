@@ -11,13 +11,13 @@ jobs:
       - checkout
       - run:
           name:  Install dependencies
-          command: pip install pre-commit pytest pytest-cov
+          command: pip install -r requirements-test.txt
       - run:
           name: pre-commit
           command: pre-commit run --all-files
       - run:
           name: Run tests
-          command: pytest --junitxml=test-results/junit.xml --cov --cov-report=xml test
+          command: pytest --junitxml=test-results/junit.xml --cov --cov-report=xml --xdoctest
       - store_test_results:
           path: test-results
       - store_artifacts:

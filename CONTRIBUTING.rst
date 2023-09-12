@@ -33,17 +33,16 @@ Pull requests
 #. Please do not try to make it more pythonic as it's built to match the original C code
 #. If you do create a pull request, please make sure that:
 
-   #. All tests pass
+   #. All tests pass (you will need to run ``pip install -r requirements-test.txt``)
 
-      #. ``python -m coverage run -m unittest``
-      #. ``make doctest -C docs``
+      #. ``pytest --cov --xdoctest``
 
    #. Code coverage for the changes is at 100%
 
-      #. ``python -m coverage report`` or
-      #. ``python -m coverage html``
+      #. ``python -m coverage report`` to view in the console or
+      #. ``python -m coverage html`` to build out html files to look at what's missing
 
-   #. Documentation builds without errors
+   #. Documentation builds without errors (you will need to run ``pip install -r docs/requirements.txt``)
 
       #. ``sphinx-build -W -b html docs/ docs/build/html``
 
