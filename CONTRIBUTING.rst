@@ -36,10 +36,15 @@ Pull requests
    #. All tests pass
 
       #. ``python -m coverage run -m unittest``
+      #. ``make doctest -C docs``
 
    #. Code coverage for the changes is at 100%
 
       #. ``python -m coverage report`` or
       #. ``python -m coverage html``
+
+   #. Documentation builds without errors
+
+      #. ``sphinx-build -W -b html docs/ docs/build/html``
 
    #. You follow the current coding styles
