@@ -1,3 +1,6 @@
+Welcome to pyGeoMag's documentation!
+====================================
+
 .. image:: https://dl.circleci.com/status-badge/img/circleci/5uMninjUXjCnNMzvVzq9EJ/A7hoBacfgFtGdDUiyiXcBy/tree/main.svg?style=svg&circle-token=13df862914431a3f89a9bc1bcc8bb5b2a177d815
    :target: https://dl.circleci.com/status-badge/redirect/circleci/5uMninjUXjCnNMzvVzq9EJ/A7hoBacfgFtGdDUiyiXcBy/tree/main
    :alt: CircleCI
@@ -7,16 +10,15 @@
 .. image:: https://img.shields.io/pypi/v/pygeomag
    :target: https://pypi.org/project/pygeomag/
    :alt: PyPI
+.. image:: https://readthedocs.org/projects/pygeomag/badge/?version=latest
+   :target: https://pygeomag.readthedocs.io/
+   :alt: Documentation Status
 .. image:: https://img.shields.io/github/license/boxpet/pygeomag.svg
    :target: https://github.com/boxpet/pygeomag/blob/main/LICENSE
    :alt: License: MIT
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
    :alt: Code style: Black
-
-####################################
-Welcome to pyGeoMag's documentation!
-####################################
 
 pyGeoMag is an implementation in Python of the `World Magnetic Model (WMM)
 <https://www.ncei.noaa.gov/products/world-magnetic-model>`_.
@@ -33,9 +35,8 @@ pyGeoMag is an implementation in Python of the `World Magnetic Model (WMM)
 
 It has been written, specifically to be used on lightweight versions of Python.
 
-************
 Installation
-************
+------------
 
 Install using `pip <http://www.pip-installer.org/en/latest>`_ with:
 
@@ -43,9 +44,8 @@ Install using `pip <http://www.pip-installer.org/en/latest>`_ with:
 
    pip install pygeomag
 
-*******
 Example
-*******
+-------
 
 Calculate the geomagnetic declination for the NOAA office in Boulder, CO.
 
@@ -57,22 +57,19 @@ Calculate the geomagnetic declination for the NOAA office in Boulder, CO.
    >>> print(result.d)
    7.85173924057477
 
-*******
 Testing
-*******
+-------
 
 This code is 100% tested. All test values from the official NOAA WMM are tested here, as well as additional values to
 get to 100% coverage.
 
-************
 Contributing
-************
+------------
 
 Please see `CONTRIBUTING.rst <https://github.com/boxpet/pygeomag/blob/main/CONTRIBUTING.rst>`_.
 
-*****
 Notes
-*****
+-----
 
 This is a direct port from the Legacy C code provided by NOAA. It is using the WMM2020 Coefficient file (WMM.COF) valid
 for 2020.0 - 2025.0. The code is specifically not 100% pythonic in order to make adding updates simple (for example
@@ -80,3 +77,8 @@ uppercase variable names).
 
 At this point Annual change also known as Secular Variation is not in this package the Legacy C version does a direct
 ``year+1.value - year2.value`` and both the test values and other existing code bases do something different.
+
+Documentation
+-------------
+
+More documentation and examples can be found at `Read the Docs <http://pygeomag.readthedocs.io/>`_.
