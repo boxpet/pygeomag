@@ -12,3 +12,4 @@ from pygeomag.time import (
     decimal_year_from_date,
     decimal_year_from_struct_time,
 )
+from pygeomag.util import __version__
