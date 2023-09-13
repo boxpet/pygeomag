@@ -5,7 +5,7 @@ GeoMag
 ------
 
 .. autoclass:: pygeomag.GeoMag
-   :members: calculate
+   :members:
 
 .. autoclass:: pygeomag.GeoMagResult
 
