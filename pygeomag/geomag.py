@@ -99,11 +99,11 @@ class GeoMag:
         >>> print(result.d)
         7.85173924057477
         """
-        tc = self.create_matrix(13, 13)
-        dp = self.create_matrix(13, 13)
-        sp = self.create_list(13)
-        cp = self.create_list(13)
-        pp = self.create_list(13)
+        tc = self._create_matrix(13, 13)
+        dp = self._create_matrix(13, 13)
+        sp = self._create_list(13)
+        cp = self._create_list(13)
+        pp = self._create_list(13)
 
         # INITIALIZE CONSTANTS
         sp[0] = 0.0
@@ -119,7 +119,7 @@ class GeoMag:
         b4 = b2 * b2
         c4 = a4 - b4
 
-        self.load_coefficients()
+        self._load_coefficients()
 
         # TODO #1: Legacy C code static vars for speed
         #  Decide to either:
@@ -278,16 +278,16 @@ class GeoMag:
         return result
 
     @classmethod
-    def create_list(cls, length, default=None):
+    def _create_list(cls, length, default=None):
         """Create a list of length with an optional default."""
         return [default] * length
 
     @classmethod
-    def create_matrix(cls, rows, columns, default=None):
+    def _create_matrix(cls, rows, columns, default=None):
         """Create a 2 dimensional matrix of length with an optional default."""
         return [[default for _ in range(columns)] for _ in range(rows)]
 
-    def get_model_filename(self):
+    def _get_model_filename(self):
         """Determine the model filename to load the coefficients from."""
         if self.coefficients_file is None:
             self.coefficients_file = "wmm/WMM.COF"
@@ -300,19 +300,19 @@ class GeoMag:
 
         return filepath
 
-    def load_coefficients(self):
+    def _load_coefficients(self):
         """Load the coefficients model to calculate the Magnetic Components from."""
         if self.epoch is not None:
             return
 
-        c = self.create_matrix(13, 13)
-        cd = self.create_matrix(13, 13)
-        snorm = self.create_list(169)
-        fn = self.create_list(13)
-        fm = self.create_list(13)
-        k = self.create_matrix(13, 13)
+        c = self._create_matrix(13, 13)
+        cd = self._create_matrix(13, 13)
+        snorm = self._create_list(169)
+        fn = self._create_list(13)
+        fm = self._create_list(13)
+        k = self._create_matrix(13, 13)
 
-        model_filename = self.get_model_filename()
+        model_filename = self._get_model_filename()
 
         with open(model_filename) as coefficients_file:
             # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
