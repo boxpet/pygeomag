@@ -78,7 +78,7 @@ class TestGeoMag(TestCase):
 
     def test_calculate_declination_time_beyond_model_bypass(self):
         geo_mag = GeoMag()
-        result = geo_mag.calculate(0, 80, 0, 2030, allow_date_past_lifespan=True)
+        result = geo_mag.calculate(0, 80, 0, 2030, allow_date_outside_lifespan=True)
         self.assertIsInstance(result, GeoMagResult)
 
     def test_calculate_declination_time_beyond_model_raises(self):
@@ -87,28 +87,28 @@ class TestGeoMag(TestCase):
             geo_mag.calculate(0, 80, 0, 2030)
 
     def test_create_list(self):
-        self.assertEqual(GeoMag.create_list(2), [None, None])
-        self.assertEqual(GeoMag.create_list(3, 0), [0, 0, 0])
-        self.assertNotEqual(GeoMag.create_list(4, 0), [1, 1, 1, 1])
+        self.assertEqual(GeoMag._create_list(2), [None, None])
+        self.assertEqual(GeoMag._create_list(3, 0), [0, 0, 0])
+        self.assertNotEqual(GeoMag._create_list(4, 0), [1, 1, 1, 1])
 
     def test_create_matrix(self):
-        self.assertEqual(GeoMag.create_matrix(2, 2), [[None, None], [None, None]])
-        self.assertEqual(GeoMag.create_matrix(2, 3, 0), [[0, 0, 0], [0, 0, 0]])
-        self.assertNotEqual(GeoMag.create_matrix(2, 4), [[1, 1, 1, 1], [1, 1, 1, 1]])
+        self.assertEqual(GeoMag._create_matrix(2, 2), [[None, None], [None, None]])
+        self.assertEqual(GeoMag._create_matrix(2, 3, 0), [[0, 0, 0], [0, 0, 0]])
+        self.assertNotEqual(GeoMag._create_matrix(2, 4), [[1, 1, 1, 1], [1, 1, 1, 1]])
 
     def test_get_model_filename_default(self):
         geo_mag = GeoMag()
-        model_filename = geo_mag.get_model_filename()
+        model_filename = geo_mag._get_model_filename()
         self.assertEqual(model_filename[-11:], "wmm/WMM.COF")
 
     def test_get_model_filename_different(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_NEW.COF")
-        model_filename = geo_mag.get_model_filename()
+        model_filename = geo_mag._get_model_filename()
         self.assertEqual(model_filename[-15:], "wmm/WMM_NEW.COF")
 
     def test_get_model_filename_fullpath(self):
         geo_mag = GeoMag(coefficients_file="/wmm/WMM_NEW.COF")
-        model_filename = geo_mag.get_model_filename()
+        model_filename = geo_mag._get_model_filename()
         self.assertEqual(model_filename, "/wmm/WMM_NEW.COF")
 
     def test_load_coefficients_invalid_header(self):
@@ -130,10 +130,12 @@ class TestGeoMag(TestCase):
         maxord_11_value = -3.4655
         maxord_12_value = -3.4599
         self.assertNotEqual(maxord_11_value, maxord_12_value)
-        geo_mag = GeoMag(maxord=11)
+        geo_mag = GeoMag()
+        geo_mag._maxord = 11
         result = geo_mag.calculate(0, 80, 0, 2020)
         self.assertAlmostEqual(result.d, maxord_11_value, 4)
-        geo_mag = GeoMag(maxord=12)
+        geo_mag = GeoMag()
+        geo_mag._maxord = 12
         result = geo_mag.calculate(0, 80, 0, 2020)
         self.assertAlmostEqual(result.d, maxord_12_value, 4)
 

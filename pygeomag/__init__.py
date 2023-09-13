@@ -4,7 +4,7 @@ from pygeomag.format import (
     degrees_minutes_seconds_to_decimal_degrees,
     degrees_minutes_to_decimal_degrees,
     pretty_print_degrees,
-    round_precision,
+    round_to_digits,
 )
 from pygeomag.geomag import GeoMag, GeoMagResult
 from pygeomag.time import (

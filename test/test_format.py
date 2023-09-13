@@ -6,30 +6,30 @@ from pygeomag import (
     degrees_minutes_seconds_to_decimal_degrees,
     degrees_minutes_to_decimal_degrees,
     pretty_print_degrees,
-    round_precision,
+    round_to_digits,
 )
 
 
 class TestFormat(TestCase):
     def test_round_precision(self):
-        self.assertEqual(round_precision(-1.559453, 6), -1.559453)
-        self.assertEqual(round_precision(-1.559453, 5), -1.55945)
-        self.assertEqual(round_precision(-1.559453, 4), -1.5595)
-        self.assertEqual(round_precision(-1.559453, 3), -1.559)
-        self.assertEqual(round_precision(-1.559453, 2), -1.56)
-        self.assertEqual(round_precision(-1.559453, 1), -1.6)
-        self.assertEqual(round_precision(-1.559453, 0), -2)
-        self.assertEqual(round_precision(1.559453, 6), 1.559453)
-        self.assertEqual(round_precision(1.559453, 5), 1.55945)
-        self.assertEqual(round_precision(1.559453, 4), 1.5595)
-        self.assertEqual(round_precision(1.559453, 3), 1.559)
-        self.assertEqual(round_precision(1.559453, 2), 1.56)
-        self.assertEqual(round_precision(1.559453, 1), 1.6)
-        self.assertEqual(round_precision(1.559453, 0), 2)
-        self.assertEqual(round_precision(1.4, 1), 1.4)
-        self.assertEqual(round_precision(1.5, 1), 1.5)
-        self.assertEqual(round_precision(1.4, 0), 1)
-        self.assertEqual(round_precision(1.5, 0), 2)
+        self.assertEqual(round_to_digits(-1.559453, 6), -1.559453)
+        self.assertEqual(round_to_digits(-1.559453, 5), -1.55945)
+        self.assertEqual(round_to_digits(-1.559453, 4), -1.5595)
+        self.assertEqual(round_to_digits(-1.559453, 3), -1.559)
+        self.assertEqual(round_to_digits(-1.559453, 2), -1.56)
+        self.assertEqual(round_to_digits(-1.559453, 1), -1.6)
+        self.assertEqual(round_to_digits(-1.559453, 0), -2)
+        self.assertEqual(round_to_digits(1.559453, 6), 1.559453)
+        self.assertEqual(round_to_digits(1.559453, 5), 1.55945)
+        self.assertEqual(round_to_digits(1.559453, 4), 1.5595)
+        self.assertEqual(round_to_digits(1.559453, 3), 1.559)
+        self.assertEqual(round_to_digits(1.559453, 2), 1.56)
+        self.assertEqual(round_to_digits(1.559453, 1), 1.6)
+        self.assertEqual(round_to_digits(1.559453, 0), 2)
+        self.assertEqual(round_to_digits(1.4, 1), 1.4)
+        self.assertEqual(round_to_digits(1.5, 1), 1.5)
+        self.assertEqual(round_to_digits(1.4, 0), 1)
+        self.assertEqual(round_to_digits(1.5, 0), 2)
 
     def test_decimal_degrees_to_degrees_minutes(self):
         self.assertEqual(decimal_degrees_to_degrees_minutes(45.7625), (45, 45.75))
@@ -62,13 +62,17 @@ class TestFormat(TestCase):
             degrees_minutes_to_decimal_degrees(0, "exception")
 
     def test_pretty_print_degrees(self):
-        self.assertEqual(pretty_print_degrees(value=45.7625, is_latitude=True), "45° 46' N")
-        self.assertEqual(pretty_print_degrees(value=-45.7625, is_latitude=True), "45° 46' S")
-        self.assertEqual(pretty_print_degrees(value=45.7625, is_latitude=False), "45° 46' E")
-        self.assertEqual(pretty_print_degrees(value=-45.7625, is_latitude=False), "45° 46' W")
-        self.assertEqual(pretty_print_degrees(value=45.7625, is_latitude=True, show_seconds=True), "45° 45' 45\" N")
-        self.assertEqual(pretty_print_degrees(value=45.7625, is_latitude=True, precision=2), "45° 45.75' N")
+        self.assertEqual(pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True), "45° 46' N")
+        self.assertEqual(pretty_print_degrees(decimal_degrees=-45.7625, is_latitude=True), "45° 46' S")
+        self.assertEqual(pretty_print_degrees(decimal_degrees=45.7625, is_latitude=False), "45° 46' E")
+        self.assertEqual(pretty_print_degrees(decimal_degrees=-45.7625, is_latitude=False), "45° 46' W")
         self.assertEqual(
-            pretty_print_degrees(value=45.7625, is_latitude=True, verbose=True, precision=2),
+            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True, show_seconds=True), "45° 45' 45\" N"
+        )
+        self.assertEqual(
+            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True, number_of_digits=2), "45° 45.75' N"
+        )
+        self.assertEqual(
+            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True, full_words=True, number_of_digits=2),
             "45 Degrees 45.75 Minutes North",
         )

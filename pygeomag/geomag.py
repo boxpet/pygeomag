@@ -70,19 +70,123 @@ class GeoMagResult:
 class GeoMag:
     """Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM)."""
 
-    def __init__(self, maxord=12, coefficients_file=None):
-        self.maxord = maxord
-        self.coefficients_file = coefficients_file
+    def __init__(self, coefficients_file=None):
+        self._coefficients_file = coefficients_file
+        self._maxord = 12
+        self._epoch = None
+        self._c = None
+        self._cd = None
+        self._p = None
+        self._fn = None
+        self._fm = None
+        self._k = None
 
-        self.epoch = None
-        self.c = None
-        self.cd = None
-        self.p = None
-        self.fn = None
-        self.fm = None
-        self.k = None
+    @classmethod
+    def _create_list(cls, length, default=None):
+        """Create a list of length with an optional default."""
+        return [default] * length
 
-    def calculate(self, glat, glon, alt, time, allow_date_past_lifespan=False):
+    @classmethod
+    def _create_matrix(cls, rows, columns, default=None):
+        """Create a 2 dimensional matrix of length with an optional default."""
+        return [[default for _ in range(columns)] for _ in range(rows)]
+
+    def _get_model_filename(self):
+        """Determine the model filename to load the coefficients from."""
+        if self._coefficients_file is None:
+            self._coefficients_file = "wmm/WMM.COF"
+
+        # some lightweight versions of Python won't have access to methods like "os.path.dirname"
+        if self._coefficients_file[0] in "\\/":
+            return self._coefficients_file
+        filepath = __file__
+        filepath = filepath.replace("geomag.py", self._coefficients_file)
+
+        return filepath
+
+    def _load_coefficients(self):
+        """Load the coefficients model to calculate the Magnetic Components from."""
+        if self._epoch is not None:
+            return
+
+        c = self._create_matrix(13, 13)
+        cd = self._create_matrix(13, 13)
+        snorm = self._create_list(169)
+        fn = self._create_list(13)
+        fm = self._create_list(13)
+        k = self._create_matrix(13, 13)
+
+        model_filename = self._get_model_filename()
+
+        with open(model_filename) as coefficients_file:
+            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
+            c[0][0] = 0.0
+            cd[0][0] = 0.0
+
+            line_data = coefficients_file.readline()
+            line_values = line_data.split()
+            if len(line_values) != 3:
+                raise ValueError("Invalid header in model file")
+            epoch, model = (t(s) for t, s in zip((float, str), line_values))
+
+            while True:
+                line_data = coefficients_file.readline()
+
+                # CHECK FOR LAST LINE IN FILE
+                if line_data[:4] == "9999":
+                    break
+
+                # END OF FILE NOT ENCOUNTERED, GET VALUES
+                line_values = line_data.split()
+                if len(line_values) != 6:
+                    raise ValueError("Corrupt record in model file")
+                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
+
+                if m > self._maxord:
+                    break
+                if m > n or m < 0:
+                    raise ValueError("Corrupt record in model file")
+                if m <= n:
+                    c[m][n] = gnm
+                    cd[m][n] = dgnm
+                    if m != 0:
+                        c[n][m - 1] = hnm
+                        cd[n][m - 1] = dhnm
+
+        # CONVERT SCHMIDT NORMALIZED GAUSS COEFFICIENTS TO UNNORMALIZED
+        snorm[0] = 1.0
+        fm[0] = 0.0
+        for n in range(1, self._maxord + 1):
+            snorm[n] = snorm[n - 1] * float(2 * n - 1) / float(n)
+            j = 2
+            m = 0
+            D1 = 1  # noqa pyCharm: Variable in function should be lowercase
+            D2 = (n - m + D1) / D1  # noqa pyCharm: Variable in function should be lowercase
+            while D2 > 0:
+                k[m][n] = float(((n - 1) * (n - 1)) - (m * m)) / float((2 * n - 1) * (2 * n - 3))
+                if m > 0:
+                    flnmj = float((n - m + 1) * j) / float(n + m)
+                    snorm[n + m * 13] = snorm[n + (m - 1) * 13] * math.sqrt(flnmj)
+                    j = 1
+                    c[n][m - 1] = snorm[n + m * 13] * c[n][m - 1]
+                    cd[n][m - 1] = snorm[n + m * 13] * cd[n][m - 1]
+                c[m][n] = snorm[n + m * 13] * c[m][n]
+                cd[m][n] = snorm[n + m * 13] * cd[m][n]
+                D2 -= 1
+                m += D1
+            fn[n] = float(n + 1)
+            fm[n] = float(n)
+        k[1][1] = 0.0
+
+        self._epoch = epoch
+        self._c = c
+        self._cd = cd
+        self._p = snorm
+        self._fn = fn
+        self._fm = fm
+        self._k = k
+
+    def calculate(self, glat, glon, alt, time, allow_date_outside_lifespan=False):
         """
         Calculate the Magnetic Components from a latitude, longitude, altitude and date.
 
@@ -90,7 +194,7 @@ class GeoMag:
         :param float glon: Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
         :param float alt: Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
         :param float time: Time (in decimal year), 2020.0 to 2025.0
-        :param bool allow_date_past_lifespan: True, if you want an estimation outside of the 5 year life span
+        :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :return type: GeoMagResult
 
         >>> from pygeomag import GeoMag
@@ -99,11 +203,11 @@ class GeoMag:
         >>> print(result.d)
         7.85173924057477
         """
-        tc = self.create_matrix(13, 13)
-        dp = self.create_matrix(13, 13)
-        sp = self.create_list(13)
-        cp = self.create_list(13)
-        pp = self.create_list(13)
+        tc = self._create_matrix(13, 13)
+        dp = self._create_matrix(13, 13)
+        sp = self._create_list(13)
+        cp = self._create_list(13)
+        pp = self._create_list(13)
 
         # INITIALIZE CONSTANTS
         sp[0] = 0.0
@@ -119,7 +223,7 @@ class GeoMag:
         b4 = b2 * b2
         c4 = a4 - b4
 
-        self.load_coefficients()
+        self._load_coefficients()
 
         # TODO #1: Legacy C code static vars for speed
         #  Decide to either:
@@ -128,10 +232,10 @@ class GeoMag:
         #   2. Remove them
         # otime = oalt = olat = olon = -1000.0
 
-        dt = time - self.epoch
+        dt = time - self._epoch
         # TODO #1: Legacy C code static vars for speed
         # if otime < 0.0 and (dt < 0.0 or dt > 5.0) and not allow_date_past_lifespan:
-        if True and (dt < 0.0 or dt > 5.0) and not allow_date_past_lifespan:
+        if True and (dt < 0.0 or dt > 5.0) and not allow_date_outside_lifespan:
             raise ValueError("Time extends beyond model 5-year life span")
 
         rlon = math.radians(glon)
@@ -162,13 +266,13 @@ class GeoMag:
         # TODO #1: Legacy C code static vars for speed
         # if glon != olon:
         if True:
-            for m in range(2, self.maxord + 1):
+            for m in range(2, self._maxord + 1):
                 sp[m] = sp[1] * cp[m - 1] + cp[1] * sp[m - 1]
                 cp[m] = cp[1] * cp[m - 1] - sp[1] * sp[m - 1]
         aor = re / r
         ar = aor * aor
         br = bt = bp = bpp = 0.0
-        for n in range(1, self.maxord + 1):
+        for n in range(1, self._maxord + 1):
             ar = ar * aor
             m = 0
             D3 = 1  # noqa pyCharm: Variable in function should be lowercase
@@ -180,29 +284,29 @@ class GeoMag:
                 # if alt != oalt or glat != olat:
                 if True:
                     if n == m:
-                        self.p[n + m * 13] = st * self.p[n - 1 + (m - 1) * 13]
-                        dp[m][n] = st * dp[m - 1][n - 1] + ct * self.p[n - 1 + (m - 1) * 13]
+                        self._p[n + m * 13] = st * self._p[n - 1 + (m - 1) * 13]
+                        dp[m][n] = st * dp[m - 1][n - 1] + ct * self._p[n - 1 + (m - 1) * 13]
                     elif n == 1 and m == 0:
-                        self.p[n + m * 13] = ct * self.p[n - 1 + m * 13]
-                        dp[m][n] = ct * dp[m][n - 1] - st * self.p[n - 1 + m * 13]
+                        self._p[n + m * 13] = ct * self._p[n - 1 + m * 13]
+                        dp[m][n] = ct * dp[m][n - 1] - st * self._p[n - 1 + m * 13]
                     elif n > 1 and n != m:
                         if m > n - 2:
-                            self.p[n - 2 + m * 13] = 0.0
+                            self._p[n - 2 + m * 13] = 0.0
                         if m > n - 2:
                             dp[m][n - 2] = 0.0
-                        self.p[n + m * 13] = ct * self.p[n - 1 + m * 13] - self.k[m][n] * self.p[n - 2 + m * 13]
-                        dp[m][n] = ct * dp[m][n - 1] - st * self.p[n - 1 + m * 13] - self.k[m][n] * dp[m][n - 2]
+                        self._p[n + m * 13] = ct * self._p[n - 1 + m * 13] - self._k[m][n] * self._p[n - 2 + m * 13]
+                        dp[m][n] = ct * dp[m][n - 1] - st * self._p[n - 1 + m * 13] - self._k[m][n] * dp[m][n - 2]
 
                 # TIME ADJUST THE GAUSS COEFFICIENTS
                 # TODO #1: Legacy C code static vars for speed
                 # if time != otime:
                 if True:
-                    tc[m][n] = self.c[m][n] + dt * self.cd[m][n]
+                    tc[m][n] = self._c[m][n] + dt * self._cd[m][n]
                     if m != 0:
-                        tc[n][m - 1] = self.c[n][m - 1] + dt * self.cd[n][m - 1]
+                        tc[n][m - 1] = self._c[n][m - 1] + dt * self._cd[n][m - 1]
 
                 # ACCUMULATE TERMS OF THE SPHERICAL HARMONIC EXPANSIONS
-                par = ar * self.p[n + m * 13]
+                par = ar * self._p[n + m * 13]
                 if m == 0:
                     temp1 = tc[m][n] * cp[m]
                     temp2 = tc[m][n] * sp[m]
@@ -210,17 +314,17 @@ class GeoMag:
                     temp1 = tc[m][n] * cp[m] + tc[n][m - 1] * sp[m]
                     temp2 = tc[m][n] * sp[m] - tc[n][m - 1] * cp[m]
                 bt = bt - ar * temp1 * dp[m][n]
-                bp += self.fm[m] * temp2 * par
-                br += self.fn[n] * temp1 * par
+                bp += self._fm[m] * temp2 * par
+                br += self._fn[n] * temp1 * par
 
                 # SPECIAL CASE:  NORTH/SOUTH GEOGRAPHIC POLES
                 if st == 0.0 and m == 1:
                     if n == 1:
                         pp[n] = pp[n - 1]
                     else:
-                        pp[n] = ct * pp[n - 1] - self.k[m][n] * pp[n - 2]
+                        pp[n] = ct * pp[n - 1] - self._k[m][n] * pp[n - 2]
                     parp = ar * pp[n]
-                    bpp += self.fm[m] * temp2 * parp
+                    bpp += self._fm[m] * temp2 * parp
 
                 D4 -= 1
                 m += D3
@@ -276,108 +380,3 @@ class GeoMag:
         # olon = glon
 
         return result
-
-    @classmethod
-    def create_list(cls, length, default=None):
-        """Create a list of length with an optional default."""
-        return [default] * length
-
-    @classmethod
-    def create_matrix(cls, rows, columns, default=None):
-        """Create a 2 dimensional matrix of length with an optional default."""
-        return [[default for _ in range(columns)] for _ in range(rows)]
-
-    def get_model_filename(self):
-        """Determine the model filename to load the coefficients from."""
-        if self.coefficients_file is None:
-            self.coefficients_file = "wmm/WMM.COF"
-
-        # some lightweight versions of Python won't have access to methods like "os.path.dirname"
-        if self.coefficients_file[0] in "\\/":
-            return self.coefficients_file
-        filepath = __file__
-        filepath = filepath.replace("geomag.py", self.coefficients_file)
-
-        return filepath
-
-    def load_coefficients(self):
-        """Load the coefficients model to calculate the Magnetic Components from."""
-        if self.epoch is not None:
-            return
-
-        c = self.create_matrix(13, 13)
-        cd = self.create_matrix(13, 13)
-        snorm = self.create_list(169)
-        fn = self.create_list(13)
-        fm = self.create_list(13)
-        k = self.create_matrix(13, 13)
-
-        model_filename = self.get_model_filename()
-
-        with open(model_filename) as coefficients_file:
-            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
-            c[0][0] = 0.0
-            cd[0][0] = 0.0
-
-            line_data = coefficients_file.readline()
-            line_values = line_data.split()
-            if len(line_values) != 3:
-                raise ValueError("Invalid header in model file")
-            epoch, model = (t(s) for t, s in zip((float, str), line_values))
-
-            while True:
-                line_data = coefficients_file.readline()
-
-                # CHECK FOR LAST LINE IN FILE
-                if line_data[:4] == "9999":
-                    break
-
-                # END OF FILE NOT ENCOUNTERED, GET VALUES
-                line_values = line_data.split()
-                if len(line_values) != 6:
-                    raise ValueError("Corrupt record in model file")
-                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
-
-                if m > self.maxord:
-                    break
-                if m > n or m < 0:
-                    raise ValueError("Corrupt record in model file")
-                if m <= n:
-                    c[m][n] = gnm
-                    cd[m][n] = dgnm
-                    if m != 0:
-                        c[n][m - 1] = hnm
-                        cd[n][m - 1] = dhnm
-
-        # CONVERT SCHMIDT NORMALIZED GAUSS COEFFICIENTS TO UNNORMALIZED
-        snorm[0] = 1.0
-        fm[0] = 0.0
-        for n in range(1, self.maxord + 1):
-            snorm[n] = snorm[n - 1] * float(2 * n - 1) / float(n)
-            j = 2
-            m = 0
-            D1 = 1  # noqa pyCharm: Variable in function should be lowercase
-            D2 = (n - m + D1) / D1  # noqa pyCharm: Variable in function should be lowercase
-            while D2 > 0:
-                k[m][n] = float(((n - 1) * (n - 1)) - (m * m)) / float((2 * n - 1) * (2 * n - 3))
-                if m > 0:
-                    flnmj = float((n - m + 1) * j) / float(n + m)
-                    snorm[n + m * 13] = snorm[n + (m - 1) * 13] * math.sqrt(flnmj)
-                    j = 1
-                    c[n][m - 1] = snorm[n + m * 13] * c[n][m - 1]
-                    cd[n][m - 1] = snorm[n + m * 13] * cd[n][m - 1]
-                c[m][n] = snorm[n + m * 13] * c[m][n]
-                cd[m][n] = snorm[n + m * 13] * cd[m][n]
-                D2 -= 1
-                m += D1
-            fn[n] = float(n + 1)
-            fm[n] = float(n)
-        k[1][1] = 0.0
-
-        self.epoch = epoch
-        self.c = c
-        self.cd = cd
-        self.p = snorm
-        self.fn = fn
-        self.fm = fm
-        self.k = k
