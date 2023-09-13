@@ -186,7 +186,7 @@ class GeoMag:
         self._fm = fm
         self._k = k
 
-    def calculate(self, glat, glon, alt, time, allow_date_past_lifespan=False):
+    def calculate(self, glat, glon, alt, time, allow_date_outside_lifespan=False):
         """
         Calculate the Magnetic Components from a latitude, longitude, altitude and date.
 
@@ -194,7 +194,7 @@ class GeoMag:
         :param float glon: Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
         :param float alt: Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
         :param float time: Time (in decimal year), 2020.0 to 2025.0
-        :param bool allow_date_past_lifespan: True, if you want an estimation outside of the 5 year life span
+        :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :return type: GeoMagResult
 
         >>> from pygeomag import GeoMag
@@ -235,7 +235,7 @@ class GeoMag:
         dt = time - self._epoch
         # TODO #1: Legacy C code static vars for speed
         # if otime < 0.0 and (dt < 0.0 or dt > 5.0) and not allow_date_past_lifespan:
-        if True and (dt < 0.0 or dt > 5.0) and not allow_date_past_lifespan:
+        if True and (dt < 0.0 or dt > 5.0) and not allow_date_outside_lifespan:
             raise ValueError("Time extends beyond model 5-year life span")
 
         rlon = math.radians(glon)

@@ -78,7 +78,7 @@ class TestGeoMag(TestCase):
 
     def test_calculate_declination_time_beyond_model_bypass(self):
         geo_mag = GeoMag()
-        result = geo_mag.calculate(0, 80, 0, 2030, allow_date_past_lifespan=True)
+        result = geo_mag.calculate(0, 80, 0, 2030, allow_date_outside_lifespan=True)
         self.assertIsInstance(result, GeoMagResult)
 
     def test_calculate_declination_time_beyond_model_raises(self):
