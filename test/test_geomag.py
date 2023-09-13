@@ -130,10 +130,12 @@ class TestGeoMag(TestCase):
         maxord_11_value = -3.4655
         maxord_12_value = -3.4599
         self.assertNotEqual(maxord_11_value, maxord_12_value)
-        geo_mag = GeoMag(maxord=11)
+        geo_mag = GeoMag()
+        geo_mag._maxord = 11
         result = geo_mag.calculate(0, 80, 0, 2020)
         self.assertAlmostEqual(result.d, maxord_11_value, 4)
-        geo_mag = GeoMag(maxord=12)
+        geo_mag = GeoMag()
+        geo_mag._maxord = 12
         result = geo_mag.calculate(0, 80, 0, 2020)
         self.assertAlmostEqual(result.d, maxord_12_value, 4)
 
