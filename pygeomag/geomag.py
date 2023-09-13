@@ -82,6 +82,111 @@ class GeoMag:
         self.fm = None
         self.k = None
 
+    @classmethod
+    def _create_list(cls, length, default=None):
+        """Create a list of length with an optional default."""
+        return [default] * length
+
+    @classmethod
+    def _create_matrix(cls, rows, columns, default=None):
+        """Create a 2 dimensional matrix of length with an optional default."""
+        return [[default for _ in range(columns)] for _ in range(rows)]
+
+    def _get_model_filename(self):
+        """Determine the model filename to load the coefficients from."""
+        if self.coefficients_file is None:
+            self.coefficients_file = "wmm/WMM.COF"
+
+        # some lightweight versions of Python won't have access to methods like "os.path.dirname"
+        if self.coefficients_file[0] in "\\/":
+            return self.coefficients_file
+        filepath = __file__
+        filepath = filepath.replace("geomag.py", self.coefficients_file)
+
+        return filepath
+
+    def _load_coefficients(self):
+        """Load the coefficients model to calculate the Magnetic Components from."""
+        if self.epoch is not None:
+            return
+
+        c = self._create_matrix(13, 13)
+        cd = self._create_matrix(13, 13)
+        snorm = self._create_list(169)
+        fn = self._create_list(13)
+        fm = self._create_list(13)
+        k = self._create_matrix(13, 13)
+
+        model_filename = self._get_model_filename()
+
+        with open(model_filename) as coefficients_file:
+            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
+            c[0][0] = 0.0
+            cd[0][0] = 0.0
+
+            line_data = coefficients_file.readline()
+            line_values = line_data.split()
+            if len(line_values) != 3:
+                raise ValueError("Invalid header in model file")
+            epoch, model = (t(s) for t, s in zip((float, str), line_values))
+
+            while True:
+                line_data = coefficients_file.readline()
+
+                # CHECK FOR LAST LINE IN FILE
+                if line_data[:4] == "9999":
+                    break
+
+                # END OF FILE NOT ENCOUNTERED, GET VALUES
+                line_values = line_data.split()
+                if len(line_values) != 6:
+                    raise ValueError("Corrupt record in model file")
+                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
+
+                if m > self.maxord:
+                    break
+                if m > n or m < 0:
+                    raise ValueError("Corrupt record in model file")
+                if m <= n:
+                    c[m][n] = gnm
+                    cd[m][n] = dgnm
+                    if m != 0:
+                        c[n][m - 1] = hnm
+                        cd[n][m - 1] = dhnm
+
+        # CONVERT SCHMIDT NORMALIZED GAUSS COEFFICIENTS TO UNNORMALIZED
+        snorm[0] = 1.0
+        fm[0] = 0.0
+        for n in range(1, self.maxord + 1):
+            snorm[n] = snorm[n - 1] * float(2 * n - 1) / float(n)
+            j = 2
+            m = 0
+            D1 = 1  # noqa pyCharm: Variable in function should be lowercase
+            D2 = (n - m + D1) / D1  # noqa pyCharm: Variable in function should be lowercase
+            while D2 > 0:
+                k[m][n] = float(((n - 1) * (n - 1)) - (m * m)) / float((2 * n - 1) * (2 * n - 3))
+                if m > 0:
+                    flnmj = float((n - m + 1) * j) / float(n + m)
+                    snorm[n + m * 13] = snorm[n + (m - 1) * 13] * math.sqrt(flnmj)
+                    j = 1
+                    c[n][m - 1] = snorm[n + m * 13] * c[n][m - 1]
+                    cd[n][m - 1] = snorm[n + m * 13] * cd[n][m - 1]
+                c[m][n] = snorm[n + m * 13] * c[m][n]
+                cd[m][n] = snorm[n + m * 13] * cd[m][n]
+                D2 -= 1
+                m += D1
+            fn[n] = float(n + 1)
+            fm[n] = float(n)
+        k[1][1] = 0.0
+
+        self.epoch = epoch
+        self.c = c
+        self.cd = cd
+        self.p = snorm
+        self.fn = fn
+        self.fm = fm
+        self.k = k
+
     def calculate(self, glat, glon, alt, time, allow_date_past_lifespan=False):
         """
         Calculate the Magnetic Components from a latitude, longitude, altitude and date.
@@ -276,108 +381,3 @@ class GeoMag:
         # olon = glon
 
         return result
-
-    @classmethod
-    def _create_list(cls, length, default=None):
-        """Create a list of length with an optional default."""
-        return [default] * length
-
-    @classmethod
-    def _create_matrix(cls, rows, columns, default=None):
-        """Create a 2 dimensional matrix of length with an optional default."""
-        return [[default for _ in range(columns)] for _ in range(rows)]
-
-    def _get_model_filename(self):
-        """Determine the model filename to load the coefficients from."""
-        if self.coefficients_file is None:
-            self.coefficients_file = "wmm/WMM.COF"
-
-        # some lightweight versions of Python won't have access to methods like "os.path.dirname"
-        if self.coefficients_file[0] in "\\/":
-            return self.coefficients_file
-        filepath = __file__
-        filepath = filepath.replace("geomag.py", self.coefficients_file)
-
-        return filepath
-
-    def _load_coefficients(self):
-        """Load the coefficients model to calculate the Magnetic Components from."""
-        if self.epoch is not None:
-            return
-
-        c = self._create_matrix(13, 13)
-        cd = self._create_matrix(13, 13)
-        snorm = self._create_list(169)
-        fn = self._create_list(13)
-        fm = self._create_list(13)
-        k = self._create_matrix(13, 13)
-
-        model_filename = self._get_model_filename()
-
-        with open(model_filename) as coefficients_file:
-            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
-            c[0][0] = 0.0
-            cd[0][0] = 0.0
-
-            line_data = coefficients_file.readline()
-            line_values = line_data.split()
-            if len(line_values) != 3:
-                raise ValueError("Invalid header in model file")
-            epoch, model = (t(s) for t, s in zip((float, str), line_values))
-
-            while True:
-                line_data = coefficients_file.readline()
-
-                # CHECK FOR LAST LINE IN FILE
-                if line_data[:4] == "9999":
-                    break
-
-                # END OF FILE NOT ENCOUNTERED, GET VALUES
-                line_values = line_data.split()
-                if len(line_values) != 6:
-                    raise ValueError("Corrupt record in model file")
-                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
-
-                if m > self.maxord:
-                    break
-                if m > n or m < 0:
-                    raise ValueError("Corrupt record in model file")
-                if m <= n:
-                    c[m][n] = gnm
-                    cd[m][n] = dgnm
-                    if m != 0:
-                        c[n][m - 1] = hnm
-                        cd[n][m - 1] = dhnm
-
-        # CONVERT SCHMIDT NORMALIZED GAUSS COEFFICIENTS TO UNNORMALIZED
-        snorm[0] = 1.0
-        fm[0] = 0.0
-        for n in range(1, self.maxord + 1):
-            snorm[n] = snorm[n - 1] * float(2 * n - 1) / float(n)
-            j = 2
-            m = 0
-            D1 = 1  # noqa pyCharm: Variable in function should be lowercase
-            D2 = (n - m + D1) / D1  # noqa pyCharm: Variable in function should be lowercase
-            while D2 > 0:
-                k[m][n] = float(((n - 1) * (n - 1)) - (m * m)) / float((2 * n - 1) * (2 * n - 3))
-                if m > 0:
-                    flnmj = float((n - m + 1) * j) / float(n + m)
-                    snorm[n + m * 13] = snorm[n + (m - 1) * 13] * math.sqrt(flnmj)
-                    j = 1
-                    c[n][m - 1] = snorm[n + m * 13] * c[n][m - 1]
-                    cd[n][m - 1] = snorm[n + m * 13] * cd[n][m - 1]
-                c[m][n] = snorm[n + m * 13] * c[m][n]
-                cd[m][n] = snorm[n + m * 13] * cd[m][n]
-                D2 -= 1
-                m += D1
-            fn[n] = float(n + 1)
-            fm[n] = float(n)
-        k[1][1] = 0.0
-
-        self.epoch = epoch
-        self.c = c
-        self.cd = cd
-        self.p = snorm
-        self.fn = fn
-        self.fm = fm
-        self.k = k
