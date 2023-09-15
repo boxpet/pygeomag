@@ -286,6 +286,12 @@ class GeoMag:
         :param float time: Time (in decimal year), 2020.0 to 2025.0
         :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :return type: GeoMagResult
+
+        >>> from pygeomag import GeoMag
+        >>> geo_mag = GeoMag()
+        >>> result = geo_mag.calculate(glat=39.9938, glon=-105.2603, alt=0, time=2023.75)
+        >>> print(result.d)
+        7.85173924057477
         """
         tc = self._create_matrix(13, 13)
         dp = self._create_matrix(13, 13)
