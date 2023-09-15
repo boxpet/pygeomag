@@ -71,9 +71,9 @@ Please see `CONTRIBUTING.rst <https://github.com/boxpet/pygeomag/blob/main/CONTR
 Notes
 -----
 
-This is a direct port from the Legacy C code provided by NOAA. It is using the WMM2020 Coefficient file (WMM.COF) valid
-for 2020.0 - 2025.0. The code is specifically not 100% pythonic in order to make adding updates simple (for example
-uppercase variable names).
+This is a direct port from the Legacy C code provided by NOAA. It defaults to using the WMM-2020 Coefficient file
+(WMM.COF) valid for 2020.0 - 2025.0. The code is specifically not 100% pythonic in order to make adding updates simple
+(for example uppercase variable names).
 
 At this point Annual change also known as Secular Variation is not in this package the Legacy C version does a direct
 ``year+1.value - year2.value`` and both the test values and other existing code bases do something different.

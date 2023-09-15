@@ -3,6 +3,9 @@ from unittest import TestCase
 from unittest.mock import DEFAULT, mock_open, patch
 
 from pygeomag import GeoMag, GeoMagResult
+from pygeomag.wmm.wmm_2015 import WMM_2015
+from pygeomag.wmm.wmm_2015v2 import WMM_2015v2
+from pygeomag.wmm.wmm_2020 import WMM_2020
 
 
 def get_test_filename(filename):
@@ -32,42 +35,105 @@ class TestGeoMagResult(TestCase):
         self.assertEqual(result.i, result.inclination)
 
 
-class TestGeoMag(TestCase):
-    def test_calculate_declination_from_wmm_set_1(self):
-        geo_mag = GeoMag()
+class TestGeoMagCoefficients(TestCase):
+    def get_test_values(self, test_parameter, style):
+        if style == 0:
+            print(len(test_parameter.split()))
+            time, alt, glat, glon, d, i, h, x, y, z, f, gv, _, _, _, _, _, _, _ = (
+                t(s)
+                for t, s in zip(
+                    (
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                    ),
+                    test_parameter.split(),
+                )
+            )
 
-        with open(get_test_filename("test_values/WMM2020testvalues.txt")) as test_values_file:
+        elif style == 1:
+            time, alt, glat, glon, x, y, z, h, f, i, d, gv, _, _, _, _, _, _, _ = (
+                t(s)
+                for t, s in zip(
+                    (
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                    ),
+                    test_parameter.split(),
+                )
+            )
+
+        else:
+            time, alt, glat, glon, d, i, h, x, y, z, f, _, _, _, _, _, _, _ = (
+                t(s)
+                for t, s in zip(
+                    (
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                        float,
+                    ),
+                    test_parameter.split(),
+                )
+            )
+            gv = None
+
+        return time, alt, glat, glon, x, y, z, h, f, i, d, gv
+
+    def run_tests(self, geo_mag, test_filename, style):
+        with open(get_test_filename(test_filename)) as test_values_file:
             for row, test_parameter in enumerate(test_values_file):
                 if test_parameter[0] == "#":
                     continue
 
-                time, alt, glat, glon, x, y, z, h, f, i, d, gv, _, _, _, _, _, _, _ = (
-                    t(s)
-                    for t, s in zip(
-                        (
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                        ),
-                        test_parameter.split(),
-                    )
-                )
+                time, alt, glat, glon, x, y, z, h, f, i, d, gv = self.get_test_values(test_parameter, style)
 
                 result = geo_mag.calculate(glat, glon, alt, time)
                 gv_test = -999 if result.gv is None else result.gv
@@ -79,52 +145,52 @@ class TestGeoMag(TestCase):
                 self.assertAlmostEqual(f, result.f, 1, f"Row {row}: F (nT) expected {f}, result {result.f}")
                 self.assertAlmostEqual(i, result.i, 2, f"Row {row}: I (Deg) expected {i}, result {result.i}")
                 self.assertAlmostEqual(d, result.d, 2, f"Row {row}: D (Deg) expected {d}, result {result.d}")
-                self.assertAlmostEqual(gv, gv_test, 2, f"Row {row}: GV (Deg) expected {gv}, result {result.gv}")
+                if style != 2:
+                    self.assertAlmostEqual(gv, gv_test, 2, f"Row {row}: GV (Deg) expected {gv}, result {result.gv}")
 
-    def test_calculate_declination_from_wmm_set_2(self):
+    def test_calculate_declination_from_2010_wmm_style_0_file(self):
+        self.run_tests(GeoMag(coefficients_file="wmm/WMM_2010.COF"), "test_values/WMM2010testvalues.txt", 0)
+
+    def test_calculate_declination_from_2015_wmm_style_1_file(self):
+        self.run_tests(GeoMag(coefficients_file="wmm/WMM_2015.COF"), "test_values/WMM2015testvalues.txt", 1)
+
+    def test_calculate_declination_from_2015_wmm_style_1_data(self):
+        self.run_tests(GeoMag(coefficients_data=WMM_2015), "test_values/WMM2015testvalues.txt", 1)
+
+    def test_calculate_declination_from_2015v2_wmm_style_1_file(self):
+        self.run_tests(GeoMag(coefficients_file="wmm/WMM_2015v2.COF"), "test_values/WMM2015v2testvalues.txt", 1)
+
+    def test_calculate_declination_from_2015v2_wmm_style_1_data(self):
+        self.run_tests(GeoMag(coefficients_data=WMM_2015v2), "test_values/WMM2015v2testvalues.txt", 1)
+
+    def test_calculate_declination_from_2020_wmm_style_1_file(self):
+        self.run_tests(GeoMag(), "test_values/WMM2020testvalues.txt", 1)
+
+    def test_calculate_declination_from_2020_wmm_style_1_data(self):
+        self.run_tests(GeoMag(coefficients_data=WMM_2020), "test_values/WMM2020testvalues.txt", 1)
+
+    def test_calculate_declination_from_2020_wmm_style_2(self):
+        self.run_tests(GeoMag(), "test_values/WMM2020_TEST_VALUES.txt", 2)
+
+
+class TestGeoMag(TestCase):
+    def test_life_span(self):
         geo_mag = GeoMag()
+        self.assertTupleEqual(geo_mag.life_span, (2020.0, 2025.0))
 
-        with open(get_test_filename("test_values/WMM2020_TEST_VALUES.txt")) as test_values_file:
-            for row, test_parameter in enumerate(test_values_file):
-                if test_parameter[0] == "#":
-                    continue
+    def test_model(self):
+        geo_mag = GeoMag()
+        self.assertEqual(geo_mag.model, "WMM-2020")
 
-                time, alt, glat, glon, d, i, h, x, y, z, f, _, _, _, _, _, _, _ = (
-                    t(s)
-                    for t, s in zip(
-                        (
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                            float,
-                        ),
-                        test_parameter.split(),
-                    )
-                )
+    def test_release_date(self):
+        geo_mag = GeoMag()
+        self.assertEqual(geo_mag.release_date, "12/10/2019")
 
-                result = geo_mag.calculate(glat, glon, alt, time)
-
-                self.assertAlmostEqual(x, result.x, 1, f"Row {row}: X (nT) expected {x}, result {result.x}")
-                self.assertAlmostEqual(y, result.y, 1, f"Row {row}: Y (nT) expected {y}, result {result.y}")
-                self.assertAlmostEqual(z, result.z, 1, f"Row {row}: Z (nT) expected {z}, result {result.z}")
-                self.assertAlmostEqual(h, result.h, 1, f"Row {row}: H (nT) expected {h}, result {result.h}")
-                self.assertAlmostEqual(f, result.f, 1, f"Row {row}: F (nT) expected {f}, result {result.f}")
-                self.assertAlmostEqual(i, result.i, 2, f"Row {row}: I (Deg) expected {i}, result {result.i}")
-                self.assertAlmostEqual(d, result.d, 2, f"Row {row}: D (Deg) expected {d}, result {result.d}")
+    def test_both_parameters_supplied_raises(self):
+        with self.assertRaisesRegex(
+            ValueError, "Both coefficients_file and coefficients_data supplied, supply none or only one."
+        ):
+            GeoMag(coefficients_file="wmm/WMM_2020.COF", coefficients_data=WMM_2020)
 
     def test_calculate_declination_time_beyond_model_bypass(self):
         geo_mag = GeoMag()

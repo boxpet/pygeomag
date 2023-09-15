@@ -2,7 +2,17 @@ import math
 
 
 def round_to_digits(number, number_of_digits=0):
-    """Round to number of digits, removing all if `0` and not Pythons round to even number strategy."""
+    """
+    Round to number of digits, removing all if `0` and not Pythons round to even number strategy.
+
+    >>> from pygeomag import round_to_digits
+    >>> round_to_digits(45.7625, 0)
+    46
+    >>> round_to_digits(45.7625, 1)
+    45.8
+    >>> round_to_digits(45.7625, 2)
+    45.76
+    """
     multiplier = 10**number_of_digits
     abs_rounded_value = math.floor(abs(number) * multiplier + 0.5) / multiplier
     rounded_value = math.copysign(abs_rounded_value, number)
