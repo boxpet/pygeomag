@@ -10,9 +10,7 @@ def get_test_filename(filename):
 
 
 def get_os_based_test_path(path):
-    if os.sep == "\\":
-        return path.replace("/", "\\")
-    return path
+    return path.replace("/", os.sep)
 
 
 class TestGeoMagResult(TestCase):
