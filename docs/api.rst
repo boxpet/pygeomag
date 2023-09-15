@@ -7,6 +7,8 @@ GeoMag
 .. autoclass:: pygeomag.GeoMag
    :members:
 
+   .. automethod:: __init__
+
 .. autoclass:: pygeomag.GeoMagResult
 
 Time utils

@@ -68,18 +68,74 @@ class GeoMagResult:
 
 
 class GeoMag:
-    """Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM)."""
+    """
+    Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM).
 
-    def __init__(self, coefficients_file=None):
+    GeoMag currently uses the WMM-2020 Coefficient file (WMM.COF) which is valid for 2020.0 - 2025.0 by default.
+
+    Included are the following coefficient files, if you have the need to calculate past values:
+
+    .. table::
+       :widths: auto
+
+       ==============  ==========  ===============  ==========
+       File            Model       Life Span        Creation
+       ==============  ==========  ===============  ==========
+       WMM.COF         WMM-2020    2020.0 - 2025.0  12/10/2019
+       WMM_2015v2.COF  WMM-2015v2  2015.0 - 2020.0  09/18/2018
+       WMM_2015.COF    WMM-2015    2015.0 - 2020.0  12/15/2014
+       WMM_2010.COF    WMM-2010    2010.0 - 2015.0  11/20/2009
+       ==============  ==========  ===============  ==========
+    """
+
+    def __init__(self, coefficients_file=None, coefficients_data=None):
+        """
+        Create a GeoMag instance.
+
+        Leaving both values as ``None`` will load the packages default coefficients file, supplying both will raise.
+
+        :param str coefficients_file: Full or relative path to a coefficients file supplied by this package or WMM
+        :param str coefficients_data: coefficients data from a python module
+        """
+        if coefficients_file is not None and coefficients_data is not None:
+            raise ValueError("Both coefficients_file and coefficients_data supplied, supply none or only one.")
+
+        self._coefficients_data = coefficients_data
         self._coefficients_file = coefficients_file
         self._maxord = 12
         self._epoch = None
+        self._model = None
+        self._release_date = None
         self._c = None
         self._cd = None
         self._p = None
         self._fn = None
         self._fm = None
         self._k = None
+
+    @property
+    def life_span(self):
+        """Return the life span for the selected coefficient file."""
+        if self._epoch is None:
+            self._load_coefficients()
+
+        return self._epoch, self._epoch + 5
+
+    @property
+    def model(self):
+        """Return the model name for the selected coefficient file."""
+        if self._epoch is None:
+            self._load_coefficients()
+
+        return self._model
+
+    @property
+    def release_date(self):
+        """Return the release date for the selected coefficient file."""
+        if self._epoch is None:
+            self._load_coefficients()
+
+        return self._release_date
 
     @classmethod
     def _create_list(cls, length, default=None):
@@ -134,42 +190,26 @@ class GeoMag:
         fm = self._create_list(13)
         k = self._create_matrix(13, 13)
 
-        model_filename = self._get_model_filename()
+        if self._coefficients_data:
+            (epoch, model, release_date), coefficients = self._coefficients_data
+        else:
+            (epoch, model, release_date), coefficients = self._read_coefficients_data_from_file()
 
-        with open(model_filename) as coefficients_file:
-            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
-            c[0][0] = 0.0
-            cd[0][0] = 0.0
+        # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
+        c[0][0] = 0.0
+        cd[0][0] = 0.0
 
-            line_data = coefficients_file.readline()
-            line_values = line_data.split()
-            if len(line_values) != 3:
-                raise ValueError("Invalid header in model file")
-            epoch, model = (t(s) for t, s in zip((float, str), line_values))
-
-            while True:
-                line_data = coefficients_file.readline()
-
-                # CHECK FOR LAST LINE IN FILE
-                if line_data[:4] == "9999":
-                    break
-
-                # END OF FILE NOT ENCOUNTERED, GET VALUES
-                line_values = line_data.split()
-                if len(line_values) != 6:
-                    raise ValueError("Corrupt record in model file")
-                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
-
-                if m > self._maxord:
-                    break
-                if m > n or m < 0:
-                    raise ValueError("Corrupt record in model file")
-                if m <= n:
-                    c[m][n] = gnm
-                    cd[m][n] = dgnm
-                    if m != 0:
-                        c[n][m - 1] = hnm
-                        cd[n][m - 1] = dhnm
+        for n, m, gnm, hnm, dgnm, dhnm in coefficients:
+            if m > self._maxord:
+                break
+            if m > n or m < 0:
+                raise ValueError("Corrupt record in model file")
+            if m <= n:
+                c[m][n] = gnm
+                cd[m][n] = dgnm
+                if m != 0:
+                    c[n][m - 1] = hnm
+                    cd[n][m - 1] = dhnm
 
         # CONVERT SCHMIDT NORMALIZED GAUSS COEFFICIENTS TO UNNORMALIZED
         snorm[0] = 1.0
@@ -197,12 +237,44 @@ class GeoMag:
         k[1][1] = 0.0
 
         self._epoch = epoch
+        self._model = model
+        self._release_date = release_date
         self._c = c
         self._cd = cd
         self._p = snorm
         self._fn = fn
         self._fm = fm
         self._k = k
+
+    def _read_coefficients_data_from_file(self):
+        data = []
+
+        model_filename = self._get_model_filename()
+
+        with open(model_filename) as coefficients_file:
+            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
+            line_data = coefficients_file.readline()
+            line_values = line_data.split()
+            if len(line_values) != 3:
+                raise ValueError("Invalid header in model file")
+            epoch, model, release_date = (t(s) for t, s in zip((float, str, str), line_values))
+
+            while True:
+                line_data = coefficients_file.readline()
+
+                # CHECK FOR LAST LINE IN FILE
+                if line_data[:4] == "9999":
+                    break
+
+                # END OF FILE NOT ENCOUNTERED, GET VALUES
+                line_values = line_data.split()
+                if len(line_values) != 6:
+                    raise ValueError("Corrupt record in model file")
+                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
+
+                data.append((n, m, gnm, hnm, dgnm, dhnm))
+
+        return (epoch, model, release_date), data
 
     def calculate(self, glat, glon, alt, time, allow_date_outside_lifespan=False):
         """
@@ -214,12 +286,6 @@ class GeoMag:
         :param float time: Time (in decimal year), 2020.0 to 2025.0
         :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :return type: GeoMagResult
-
-        >>> from pygeomag import GeoMag
-        >>> geo_mag = GeoMag()
-        >>> result = geo_mag.calculate(glat=39.9938, glon=-105.2603, alt=0, time=2023.75)
-        >>> print(result.d)
-        7.85173924057477
         """
         tc = self._create_matrix(13, 13)
         dp = self._create_matrix(13, 13)

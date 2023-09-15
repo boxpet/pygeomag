@@ -8,6 +8,7 @@ Contents
 
    Home <self>
    api
+   microcontrollers
 
 Indices and search
 ------------------
