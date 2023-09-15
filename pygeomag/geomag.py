@@ -93,16 +93,34 @@ class GeoMag:
 
     def _get_model_filename(self):
         """Determine the model filename to load the coefficients from."""
-        if self._coefficients_file is None:
-            self._coefficients_file = "wmm/WMM.COF"
-
         # some lightweight versions of Python won't have access to methods like "os.path.dirname"
-        if self._coefficients_file[0] in "\\/":
+        if self._coefficients_file and self._coefficients_file[0] in "\\/":
             return self._coefficients_file
-        filepath = __file__
-        filepath = filepath.replace("geomag.py", self._coefficients_file)
 
-        return filepath
+        filepath = __file__
+        sep = "/" if "/" in filepath else "\\"
+        filename = filepath.split(sep)[-1]
+
+        if self._coefficients_file:
+            return filepath.replace(filename, self._coefficients_file)
+
+        coefficients_file = f"wmm{sep}WMM.COF"
+        wmm_filepath = filepath.replace(filename, coefficients_file)
+        try:
+            with open(wmm_filepath):
+                self._coefficients_file = wmm_filepath
+                return wmm_filepath
+        except OSError:
+            """File not found, try in same directory"""
+
+        coefficients_file = "WMM.COF"
+        wmm_filepath_2 = filepath.replace(filename, coefficients_file)
+        try:
+            with open(wmm_filepath_2):
+                self._coefficients_file = wmm_filepath_2
+                return wmm_filepath_2
+        except OSError:
+            return wmm_filepath
 
     def _load_coefficients(self):
         """Load the coefficients model to calculate the Magnetic Components from."""

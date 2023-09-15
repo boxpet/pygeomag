@@ -1,11 +1,16 @@
 import os
 from unittest import TestCase
+from unittest.mock import DEFAULT, mock_open, patch
 
 from pygeomag import GeoMag, GeoMagResult
 
 
 def get_test_filename(filename):
     return os.path.join(os.path.dirname(__file__), filename)
+
+
+def get_os_based_test_path(path):
+    return path.replace("/", os.sep)
 
 
 class TestGeoMagResult(TestCase):
@@ -144,7 +149,25 @@ class TestGeoMag(TestCase):
     def test_get_model_filename_default(self):
         geo_mag = GeoMag()
         model_filename = geo_mag._get_model_filename()
-        self.assertEqual(model_filename[-11:], "wmm/WMM.COF")
+        self.assertEqual(model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF"))
+
+    def test_get_model_filename_default_not_in_wmm_path(self):
+        m = mock_open(read_data="")
+        m.side_effect = [OSError, DEFAULT]
+        with patch("pygeomag.geomag.open", m):
+            geo_mag = GeoMag()
+            model_filename = geo_mag._get_model_filename()
+            self.assertEqual(model_filename[-16:], get_os_based_test_path("pygeomag/WMM.COF"))
+        self.assertEqual(m.call_count, 2)
+
+    def test_get_model_filename_default_when_neither_file_exists(self):
+        m = mock_open()
+        m.side_effect = OSError
+        with patch("pygeomag.geomag.open", m):
+            geo_mag = GeoMag()
+            model_filename = geo_mag._get_model_filename()
+            self.assertEqual(model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF"))
+        self.assertEqual(m.call_count, 2)
 
     def test_get_model_filename_different(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_NEW.COF")

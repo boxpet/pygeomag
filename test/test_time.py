@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 import time
 from unittest import TestCase
 
@@ -90,8 +91,9 @@ class TestHelpers(TestCase):
         )
 
         # Needed in case running in a timezone with no DST, like UTC
-        os.environ["TZ"] = "US/Pacific"
-        time.tzset()
+        if sys.platform != "win32":
+            os.environ["TZ"] = "US/Pacific"
+            time.tzset()
 
         with_dst = time.mktime(time.struct_time(test_parameters[0][0]))
         without_dst = time.mktime(time.struct_time(test_parameters[1][0]))
