@@ -247,6 +247,7 @@ class GeoMag:
         self._k = k
 
     def _read_coefficients_data_from_file(self):
+        """Read coefficients data from file to be processed by ``_load_coefficients``."""
         data = []
 
         model_filename = self._get_model_filename()
