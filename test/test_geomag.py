@@ -28,7 +28,7 @@ class TestGeoMagResult(TestCase):
 
 
 class TestGeoMag(TestCase):
-    def test_calculate_declination_from_wmm(self):
+    def test_calculate_declination_from_wmm_set_1(self):
         geo_mag = GeoMag()
 
         with open(get_test_filename("test_values/WMM2020testvalues.txt")) as test_values_file:
@@ -75,6 +75,51 @@ class TestGeoMag(TestCase):
                 self.assertAlmostEqual(i, result.i, 2, f"Row {row}: I (Deg) expected {i}, result {result.i}")
                 self.assertAlmostEqual(d, result.d, 2, f"Row {row}: D (Deg) expected {d}, result {result.d}")
                 self.assertAlmostEqual(gv, gv_test, 2, f"Row {row}: GV (Deg) expected {gv}, result {result.gv}")
+
+    def test_calculate_declination_from_wmm_set_2(self):
+        geo_mag = GeoMag()
+
+        with open(get_test_filename("test_values/WMM2020_TEST_VALUES.txt")) as test_values_file:
+            for row, test_parameter in enumerate(test_values_file):
+                if test_parameter[0] == "#":
+                    continue
+
+                time, alt, glat, glon, d, i, h, x, y, z, f, _, _, _, _, _, _, _ = (
+                    t(s)
+                    for t, s in zip(
+                        (
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                            float,
+                        ),
+                        test_parameter.split(),
+                    )
+                )
+
+                result = geo_mag.calculate(glat, glon, alt, time)
+
+                self.assertAlmostEqual(x, result.x, 1, f"Row {row}: X (nT) expected {x}, result {result.x}")
+                self.assertAlmostEqual(y, result.y, 1, f"Row {row}: Y (nT) expected {y}, result {result.y}")
+                self.assertAlmostEqual(z, result.z, 1, f"Row {row}: Z (nT) expected {z}, result {result.z}")
+                self.assertAlmostEqual(h, result.h, 1, f"Row {row}: H (nT) expected {h}, result {result.h}")
+                self.assertAlmostEqual(f, result.f, 1, f"Row {row}: F (nT) expected {f}, result {result.f}")
+                self.assertAlmostEqual(i, result.i, 2, f"Row {row}: I (Deg) expected {i}, result {result.i}")
+                self.assertAlmostEqual(d, result.d, 2, f"Row {row}: D (Deg) expected {d}, result {result.d}")
 
     def test_calculate_declination_time_beyond_model_bypass(self):
         geo_mag = GeoMag()
