@@ -288,11 +288,21 @@ class GeoMag:
         :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :return type: GeoMagResult
 
+        Calculate the geomagnetic declination at the Space Needle in Seattle, WA:
+
         >>> from pygeomag import GeoMag
         >>> geo_mag = GeoMag()
-        >>> result = geo_mag.calculate(glat=39.9938, glon=-105.2603, alt=0, time=2023.75)
+        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
         >>> print(result.d)
-        7.85173924057477
+        15.25942260585284
+
+        And calculate it for the same spot 10 years ago:
+
+        >>> from pygeomag import GeoMag
+        >>> geo_mag = GeoMag(coefficients_file='wmm/WMM_2010.COF')
+        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2013.75)
+        >>> print(result.d)
+        16.32554283003356
         """
         tc = self._create_matrix(13, 13)
         dp = self._create_matrix(13, 13)
