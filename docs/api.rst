@@ -4,6 +4,10 @@ API
 GeoMag
 ------
 
+.. autoexception:: pygeomag.BlackoutZoneException
+
+.. autoexception:: pygeomag.CautionZoneException
+
 .. autoclass:: pygeomag.GeoMag
    :members:
 

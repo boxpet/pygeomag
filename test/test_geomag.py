@@ -2,7 +2,7 @@ import os
 from unittest import TestCase
 from unittest.mock import DEFAULT, mock_open, patch
 
-from pygeomag import GeoMag, GeoMagResult
+from pygeomag import BlackoutZoneException, CautionZoneException, GeoMag, GeoMagResult
 from pygeomag.wmm.wmm_2015 import WMM_2015
 from pygeomag.wmm.wmm_2015v2 import WMM_2015v2
 from pygeomag.wmm.wmm_2020 import WMM_2020
@@ -174,18 +174,6 @@ class TestGeoMagCoefficients(TestCase):
 
 
 class TestGeoMag(TestCase):
-    def test_life_span(self):
-        geo_mag = GeoMag()
-        self.assertTupleEqual(geo_mag.life_span, (2020.0, 2025.0))
-
-    def test_model(self):
-        geo_mag = GeoMag()
-        self.assertEqual(geo_mag.model, "WMM-2020")
-
-    def test_release_date(self):
-        geo_mag = GeoMag()
-        self.assertEqual(geo_mag.release_date, "12/10/2019")
-
     def test_both_parameters_supplied_raises(self):
         with self.assertRaisesRegex(
             ValueError, "Both coefficients_file and coefficients_data supplied, supply none or only one."
@@ -211,6 +199,26 @@ class TestGeoMag(TestCase):
         self.assertEqual(GeoMag._create_matrix(2, 2), [[None, None], [None, None]])
         self.assertEqual(GeoMag._create_matrix(2, 3, 0), [[0, 0, 0], [0, 0, 0]])
         self.assertNotEqual(GeoMag._create_matrix(2, 4), [[1, 1, 1, 1], [1, 1, 1, 1]])
+
+    def test_exception_blackout_zone_does_not_raise(self):
+        geo_mag = GeoMag()
+        result = geo_mag.calculate(90, 90, 0, 2020, raise_in_warning_zone=False)
+        self.assertEqual(result.in_blackout_zone, True)
+
+    def test_exception_blackout_zone_raises(self):
+        geo_mag = GeoMag()
+        with self.assertRaises(BlackoutZoneException):
+            geo_mag.calculate(90, 90, 0, 2020, raise_in_warning_zone=True)
+
+    def test_exception_caution_zone_does_not_raise(self):
+        geo_mag = GeoMag()
+        result = geo_mag.calculate(80, 80, 0, 2020, raise_in_warning_zone=False)
+        self.assertEqual(result.in_caution_zone, True)
+
+    def test_exception_caution_zone_raises(self):
+        geo_mag = GeoMag()
+        with self.assertRaises(CautionZoneException):
+            geo_mag.calculate(80, 80, 0, 2020, raise_in_warning_zone=True)
 
     def test_get_model_filename_default(self):
         geo_mag = GeoMag()
@@ -277,3 +285,15 @@ class TestGeoMag(TestCase):
         geo_mag = GeoMag(coefficients_file="missing.cof")
         with self.assertRaisesRegex(FileNotFoundError, "No such file or directory"):
             geo_mag.calculate(0, 80, 0, 2030)
+
+    def test_property_life_span(self):
+        geo_mag = GeoMag()
+        self.assertTupleEqual(geo_mag.life_span, (2020.0, 2025.0))
+
+    def test_property_model(self):
+        geo_mag = GeoMag()
+        self.assertEqual(geo_mag.model, "WMM-2020")
+
+    def test_property_release_date(self):
+        geo_mag = GeoMag()
+        self.assertEqual(geo_mag.release_date, "12/10/2019")
