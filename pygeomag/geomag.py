@@ -1,6 +1,26 @@
 import math
 
 
+class BlackoutZoneException(Exception):
+    """
+    Horizontal intensity is in a Blackout Zone.
+
+    The Blackout Zones are defined as regions around the north and south magnetic poles where the horizontal intensity
+    of Earth's magnetic field (H) is less than 2000 nT. In these zones WMM declination values are inaccurate and
+    compasses are unreliable.
+    """
+
+
+class CautionZoneException(Exception):
+    """
+    Horizontal intensity is in a Caution Zone.
+
+    A Caution Zone is an areas around a Blackout Zone where caution must be exercised while using a compass. It is
+    defined where Earth's magnetic field (H) is between 2000 and 6000 nT. Compass accuracy may be degraded in this
+    region.
+    """
+
+
 class GeoMagResult:
     """
     The Magnetic Components values from ``GeoMag.calculate()``.
@@ -32,6 +52,8 @@ class GeoMagResult:
         self.i = None
         self.d = None
         self.gv = None
+        self.in_blackout_zone = False
+        self.in_caution_zone = False
 
     @property
     def dec(self):
@@ -58,13 +80,30 @@ class GeoMagResult:
         """Additional name for variable f."""
         return self.f
 
-    def compute(self):
+    def compute(self, raise_in_warning_zone):
         """Calculate extra result values."""
         # COMPUTE X, Y, Z, AND H COMPONENTS OF THE MAGNETIC FIELD
         self.x = self.f * (math.cos(math.radians(self.d)) * math.cos(math.radians(self.i)))
         self.y = self.f * (math.cos(math.radians(self.i)) * math.sin(math.radians(self.d)))
         self.z = self.f * (math.sin(math.radians(self.i)))
         self.h = self.f * (math.cos(math.radians(self.i)))
+
+        # Check if in Caution or Blackout Zones
+        if self.h < 2000:
+            if raise_in_warning_zone:
+                raise BlackoutZoneException(
+                    f"The horizontal field strength at this location is {self.h:.1f}. Compass readings have VERY LARGE "
+                    "uncertainties in areas where H smaller than 2000 nT"
+                )
+            self.in_blackout_zone = True
+
+        elif self.h < 6000:
+            if raise_in_warning_zone:
+                raise CautionZoneException(
+                    f"The horizontal field strength at this location is {self.h:.1f}. Compass readings have large "
+                    "uncertainties in areas where H smaller than 6000 nT"
+                )
+            self.in_caution_zone = True
 
 
 class GeoMag:
@@ -277,7 +316,15 @@ class GeoMag:
 
         return (epoch, model, release_date), data
 
-    def calculate(self, glat, glon, alt, time, allow_date_outside_lifespan=False):
+    def calculate(
+        self,
+        glat,
+        glon,
+        alt,
+        time,
+        allow_date_outside_lifespan=False,
+        raise_in_warning_zone=False,
+    ):
         """
         Calculate the Magnetic Components from a latitude, longitude, altitude and date.
 
@@ -286,6 +333,8 @@ class GeoMag:
         :param float alt: Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
         :param float time: Time (in decimal year), 2020.0 to 2025.0
         :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
+        :param bool raise_in_warning_zone: True if you want to raise a BlackoutZoneException or CautionZoneException
+            exception when the horizontal intensity is < 6000
         :return type: GeoMagResult
 
         Calculate the geomagnetic declination at the Space Needle in Seattle, WA:
@@ -472,7 +521,7 @@ class GeoMag:
         if result.gv == gv_default:
             result.gv = None
 
-        result.compute()
+        result.compute(raise_in_warning_zone)
 
         # TODO #1: Legacy C code static vars for speed
         # otime = time

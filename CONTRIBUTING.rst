@@ -46,4 +46,7 @@ Pull requests
 
       #. ``sphinx-build -W -b html docs/ docs/build/html``
 
+   #. Make sure that the code can be compiles with ``mpy-cross`` (there is a good guide on setting that up
+      `here <https://learn.adafruit.com/building-circuitpython/build-circuitpython>`_
+
    #. You follow the current coding styles

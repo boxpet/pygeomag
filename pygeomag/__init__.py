@@ -6,7 +6,12 @@ from pygeomag.format import (
     pretty_print_degrees,
     round_to_digits,
 )
-from pygeomag.geomag import GeoMag, GeoMagResult
+from pygeomag.geomag import (
+    BlackoutZoneException,
+    CautionZoneException,
+    GeoMag,
+    GeoMagResult,
+)
 from pygeomag.time import (
     calculate_decimal_year,
     decimal_year_from_date,
