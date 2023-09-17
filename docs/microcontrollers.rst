@@ -23,9 +23,9 @@ faster.
    >>> from boxpet_geomag.geomag import GeoMag
    >>> from boxpet_geomag.wmm_2020 import WMM_2020
    >>> geo_mag = GeoMag(coefficients_data=WMM_2020)
-   >>> result = geo_mag.calculate(glat=39.9938, glon=-105.2603, alt=0, time=2023.75)
+   >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
    >>> print(result.d)
-   7.85171
+   15.2594
 
 If you are wanting to find values in the past, you can copy additional coefficient files:
 
@@ -56,3 +56,8 @@ used to point a person or device in a general direction (not pin point accuracy)
 
    CircuitPython's floats have 8 bits of exponent and 22 bits of mantissa (not 24 like regular single precision floating
    point), which is about five or six decimal digits of precision.
+
+.. note::
+   From NOAA:
+
+   Single precision arithmetic can cause differences of up to 0.1 nT
