@@ -11,6 +11,7 @@ from pygeomag.geomag import (
     CautionZoneException,
     GeoMag,
     GeoMagResult,
+    GeoMagUncertaintyResult,
 )
 from pygeomag.time import (
     calculate_decimal_year,

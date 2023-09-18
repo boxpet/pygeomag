@@ -26,6 +26,9 @@ faster.
    >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
    >>> print(result.d)
    15.2594
+   >>> uncertainty = result.calculate_uncertainty()
+   >>> print(uncertainty.d)
+   0.39353
 
 If you are wanting to find values in the past, you can copy additional coefficient files:
 

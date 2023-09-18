@@ -80,7 +80,7 @@ class GeoMagResult:
         """Additional name for variable f."""
         return self.f
 
-    def compute(self, raise_in_warning_zone):
+    def calculate(self, raise_in_warning_zone):
         """Calculate extra result values."""
         # COMPUTE X, Y, Z, AND H COMPONENTS OF THE MAGNETIC FIELD
         self.x = self.f * (math.cos(math.radians(self.d)) * math.cos(math.radians(self.i)))
@@ -105,12 +105,81 @@ class GeoMagResult:
                 )
             self.in_caution_zone = True
 
+    def calculate_uncertainty(self):
+        """
+        Calculate the uncertainty values for this ``GeoMagResult``.
+
+        Uncertainty estimates provided by the **WMM2015** and **WMM2020** error model for the various field components.
+        H is expressed in nT in the formula providing the error in D.
+
+        These values can currently only be computed for ``GeoMagResult`` between 2015.0 and 2025.0 and using a value
+        outside this will raise an Exception
+
+        >>> from pygeomag import GeoMag
+        >>> geo_mag = GeoMag()
+        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
+        >>> uncertainty = result.calculate_uncertainty()
+        >>> print(uncertainty.d)
+        0.3935273117953904
+        """
+        return GeoMagUncertaintyResult(self)
+
+
+class GeoMagUncertaintyResult:
+    """
+    The uncertainty values of a ``GeoMagResult``.
+
+    - **f** *(float)* – Uncertainty of the Total Intensity in nT
+    - **h** *(float)* – Uncertainty of the Horizontal Intensity in nT
+    - **x** *(float)* – Uncertainty of the North Component in nT
+    - **y** *(float)* – Uncertainty of the East Component in nT
+    - **z** *(float)* – Uncertainty of the Vertical Component in nT
+    - **i** *(float)* – Uncertainty of the Geomagnetic Inclination in degrees
+    - **d** *(float)* – Uncertainty of the Geomagnetic Declination (Magnetic Variation) in degrees
+    """
+
+    def __init__(self, result):
+        self.x = None
+        self.y = None
+        self.z = None
+        self.h = None
+        self.f = None
+        self.i = None
+        self.d = None
+
+        if 2020.0 <= result.time <= 2025.0:
+            self._error_model_wmm_2020(result)
+        elif 2015.0 <= result.time < 2020.0:
+            self._error_model_wmm_2015(result)
+        else:
+            raise ValueError("GeoMagResult outside of known uncertainty estimates.")
+
+    def _error_model_wmm_2015(self, result):
+        """Calculate uncertainty estimates for 2015.0 to 2020.0."""
+        self.x = 138.0
+        self.y = 89.0
+        self.z = 165.0
+        self.h = 133.0
+        self.f = 152.0
+        self.i = 0.22
+        self.d = math.sqrt(0.23**2 + (5430 / result.h) ** 2)
+
+    def _error_model_wmm_2020(self, result):
+        """Calculate uncertainty estimates for 2020.0 to 2025.0."""
+        self.x = 131.0
+        self.y = 94.0
+        self.z = 157.0
+        self.h = 128.0
+        self.f = 148.0
+        self.i = 0.21
+        self.d = math.sqrt(0.26**2 + (5625 / result.h) ** 2)
+
 
 class GeoMag:
     """
     Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM).
 
-    GeoMag currently uses the WMM-2020 Coefficient file (WMM.COF) which is valid for 2020.0 - 2025.0 by default.
+    It defaults to using the WMM-2020 Coefficient file (WMM.COF) valid for 2020.0 - 2025.0.
 
     Included are the following coefficient files, if you have the need to calculate past values:
 
@@ -521,7 +590,7 @@ class GeoMag:
         if result.gv == gv_default:
             result.gv = None
 
-        result.compute(raise_in_warning_zone)
+        result.calculate(raise_in_warning_zone)
 
         # TODO #1: Legacy C code static vars for speed
         # otime = time
