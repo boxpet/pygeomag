@@ -14,6 +14,9 @@ GeoMag
    .. automethod:: __init__
 
 .. autoclass:: pygeomag.GeoMagResult
+   :members: calculate_uncertainty
+
+.. autoclass:: pygeomag.GeoMagUncertaintyResult
 
 Time utils
 ----------

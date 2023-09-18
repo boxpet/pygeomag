@@ -2,7 +2,13 @@ import os
 from unittest import TestCase
 from unittest.mock import DEFAULT, mock_open, patch
 
-from pygeomag import BlackoutZoneException, CautionZoneException, GeoMag, GeoMagResult
+from pygeomag import (
+    BlackoutZoneException,
+    CautionZoneException,
+    GeoMag,
+    GeoMagResult,
+    GeoMagUncertaintyResult,
+)
 from pygeomag.wmm.wmm_2015 import WMM_2015
 from pygeomag.wmm.wmm_2015v2 import WMM_2015v2
 from pygeomag.wmm.wmm_2020 import WMM_2020
@@ -17,6 +23,13 @@ def get_os_based_test_path(path):
 
 
 class TestGeoMagResult(TestCase):
+    def test_calculate_uncertainty(self):
+        geo_mag = GeoMag()
+        result = geo_mag.calculate(80, 0, 0, 2020)
+        uncertainty = result.calculate_uncertainty()
+        self.assertIsInstance(uncertainty, GeoMagUncertaintyResult)
+        self.assertAlmostEqual(uncertainty.d, 0.89, 2)
+
     def test_d_property(self):
         result = GeoMagResult(0, 0, 0, 0)
         result.d = 5
@@ -33,6 +46,56 @@ class TestGeoMagResult(TestCase):
         result.i = 5
         self.assertEqual(result.i, result.dip)
         self.assertEqual(result.i, result.inclination)
+
+
+class TestGeoMagUncertaintyResult(TestCase):
+    def test_static_values_2015(self):
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2015.COF")
+        result = geo_mag.calculate(80, 0, 0, 2015)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertEqual(uncertainty.x, 138.0)
+        self.assertEqual(uncertainty.y, 89.0)
+        self.assertEqual(uncertainty.z, 165.0)
+        self.assertEqual(uncertainty.h, 133.0)
+        self.assertEqual(uncertainty.f, 152.0)
+        self.assertEqual(uncertainty.i, 0.22)
+
+    def test_static_values_2020(self):
+        geo_mag = GeoMag()
+        result = geo_mag.calculate(80, 0, 0, 2020)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertEqual(uncertainty.x, 131.0)
+        self.assertEqual(uncertainty.y, 94.0)
+        self.assertEqual(uncertainty.z, 157.0)
+        self.assertEqual(uncertainty.h, 128.0)
+        self.assertEqual(uncertainty.f, 148.0)
+        self.assertEqual(uncertainty.i, 0.21)
+
+    def test_uncertainty_degrees_2015(self):
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2015.COF")
+        result = geo_mag.calculate(80, 0, 0, 2015.0)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertAlmostEqual(uncertainty.d, 0.85, 2)
+
+        result = geo_mag.calculate(0, 120, 0, 2015.0)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertAlmostEqual(uncertainty.d, 0.27, 2)
+
+    def test_uncertainty_degrees_2022(self):
+        geo_mag = GeoMag()
+        result = geo_mag.calculate(80, 0, 0, 2020.0)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertAlmostEqual(uncertainty.d, 0.89, 2)
+
+        result = geo_mag.calculate(0, 120, 0, 2020.0)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertAlmostEqual(uncertainty.d, 0.30, 2)
+
+    def test_time_out_of_supported_range(self):
+        geo_mag = GeoMag()
+        result = geo_mag.calculate(80, 0, 0, 2026.0, allow_date_outside_lifespan=True)
+        with self.assertRaisesRegex(ValueError, "GeoMagResult outside of known uncertainty estimates."):
+            GeoMagUncertaintyResult(result)
 
 
 class TestGeoMagCoefficients(TestCase):
