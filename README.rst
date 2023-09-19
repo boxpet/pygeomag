@@ -97,16 +97,11 @@ And calculate it for the same spot 10 years ago:
    >>> print(result.d)
    16.32554283003356
 
-Testing
--------
+Validation
+----------
 
-This code is 100% tested. All test values from the official NOAA WMM are tested here, as well as additional values to
-get to 100% coverage.
-
-Contributing
-------------
-
-Please see `CONTRIBUTING.rst <https://github.com/boxpet/pygeomag/blob/main/CONTRIBUTING.rst>`_.
+All test values from the official NOAA WMM documentation are tested here for WMM-2020, WMM-2015v2, WMM-2015 and
+WMM-2010.
 
 Notes
 -----

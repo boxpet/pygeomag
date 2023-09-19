@@ -9,6 +9,7 @@ Contents
    Home <self>
    api
    microcontrollers
+   contributing
 
 Indices and search
 ------------------
