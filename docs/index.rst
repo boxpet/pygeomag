@@ -10,6 +10,7 @@ Contents
    api
    microcontrollers
    contributing
+   changelog
 
 Indices and search
 ------------------
