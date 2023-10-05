@@ -24,13 +24,16 @@ classifiers = [
 
 [tool.black]
 line-length = 120
-target-version = ['py310']
+target-version = ["py310"]
 
 [tool.isort]
 profile = "black"
 
 [tool.setuptools]
-py-modules = []
+packages = [
+    "pygeomag",
+    "pygeomag.wmm",
+]
 
 [tool.setuptools.dynamic]
 version = {attr = "pygeomag.__version__"}
