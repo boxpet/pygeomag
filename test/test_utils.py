@@ -5,4 +5,4 @@ from pygeomag import __version__
 
 class TestUtil(TestCase):
     def test_version(self):
-        self.assertEqual(__version__, "1.0.1")
+        self.assertEqual(__version__, "1.0.2")
