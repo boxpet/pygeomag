@@ -22,12 +22,23 @@ classifiers = [
 "Homepage" = "https://github.com/boxpet/pygeomag"
 "Bug Tracker" = "https://github.com/boxpet/pygeomag/issues"
 
-[tool.black]
-line-length = 120
-target-version = ["py310"]
+[tool.coverage.run]
+omit = [
+    "*/test/*",
+    ]
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+target-version = "py38"
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = ["D", "I", "PL", "UP"]
+ignore = ["D100", "D104", "D107"]
+
+[tool.ruff.lint.per-file-ignores]
+"test/**.py" = ["D"]
 
 [tool.setuptools]
 packages = [

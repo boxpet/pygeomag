@@ -39,10 +39,14 @@ class TestFormat(TestCase):
             decimal_degrees_to_degrees_minutes("exception")
 
     def test_decimal_degrees_to_degrees_minutes_seconds(self):
-        self.assertEqual(decimal_degrees_to_degrees_minutes_seconds(45.7625), (45, 45, 45.0))
+        self.assertEqual(
+            decimal_degrees_to_degrees_minutes_seconds(45.7625), (45, 45, 45.0)
+        )
 
     def test_degrees_minutes_seconds_to_decimal_degrees(self):
-        self.assertEqual(degrees_minutes_seconds_to_decimal_degrees(45, 45, 45), 45.7625)
+        self.assertEqual(
+            degrees_minutes_seconds_to_decimal_degrees(45, 45, 45), 45.7625
+        )
 
     def test_degrees_minutes_seconds_to_decimal_degrees_exception(self):
         with self.assertRaisesRegex(TypeError, "degrees is not a number"):
@@ -62,17 +66,39 @@ class TestFormat(TestCase):
             degrees_minutes_to_decimal_degrees(0, "exception")
 
     def test_pretty_print_degrees(self):
-        self.assertEqual(pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True), "45° 46' N")
-        self.assertEqual(pretty_print_degrees(decimal_degrees=-45.7625, is_latitude=True), "45° 46' S")
-        self.assertEqual(pretty_print_degrees(decimal_degrees=45.7625, is_latitude=False), "45° 46' E")
-        self.assertEqual(pretty_print_degrees(decimal_degrees=-45.7625, is_latitude=False), "45° 46' W")
         self.assertEqual(
-            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True, show_seconds=True), "45° 45' 45\" N"
+            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True), "45° 46' N"
         )
         self.assertEqual(
-            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True, number_of_digits=2), "45° 45.75' N"
+            pretty_print_degrees(decimal_degrees=-45.7625, is_latitude=True),
+            "45° 46' S",
         )
         self.assertEqual(
-            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=True, full_words=True, number_of_digits=2),
+            pretty_print_degrees(decimal_degrees=45.7625, is_latitude=False),
+            "45° 46' E",
+        )
+        self.assertEqual(
+            pretty_print_degrees(decimal_degrees=-45.7625, is_latitude=False),
+            "45° 46' W",
+        )
+        self.assertEqual(
+            pretty_print_degrees(
+                decimal_degrees=45.7625, is_latitude=True, show_seconds=True
+            ),
+            "45° 45' 45\" N",
+        )
+        self.assertEqual(
+            pretty_print_degrees(
+                decimal_degrees=45.7625, is_latitude=True, number_of_digits=2
+            ),
+            "45° 45.75' N",
+        )
+        self.assertEqual(
+            pretty_print_degrees(
+                decimal_degrees=45.7625,
+                is_latitude=True,
+                full_words=True,
+                number_of_digits=2,
+            ),
             "45 Degrees 45.75 Minutes North",
         )

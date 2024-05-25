@@ -45,4 +45,8 @@ Pull requests
    #. Make sure that the code can be compiles with ``mpy-cross`` (there is a good guide on setting that up
       `here <https://learn.adafruit.com/building-circuitpython/build-circuitpython>`_
 
+   #. Make sure the project builds (you will need to run ``pip install -r requirements-build.txt``)
+
+      #. ``python -m build``
+
    #. You follow the current coding styles
