@@ -1,12 +1,12 @@
 version: 2.1
 
 orbs:
-  codecov: codecov/codecov@3.2.5
+  codecov: codecov/codecov@4.1.0
 
 jobs:
   test:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.11
     steps:
       - checkout
       - run:

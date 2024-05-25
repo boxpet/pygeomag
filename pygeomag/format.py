@@ -2,8 +2,7 @@ import math
 
 
 def round_to_digits(number, number_of_digits=0):
-    """
-    Round to number of digits, removing all if `0` and not Pythons round to even number strategy.
+    """Round to number of digits, removing all if `0` and not Pythons round to even number strategy.
 
     >>> from pygeomag import round_to_digits
     >>> round_to_digits(45.7625, 0)
@@ -20,8 +19,7 @@ def round_to_digits(number, number_of_digits=0):
 
 
 def decimal_degrees_to_degrees_minutes(decimal_degrees):
-    """
-    Convert decimal degrees to degrees and minutes.
+    """Convert decimal degrees to degrees and minutes.
 
     >>> from pygeomag import decimal_degrees_to_degrees_minutes
     >>> decimal_degrees_to_degrees_minutes(45.7625)
@@ -37,8 +35,7 @@ def decimal_degrees_to_degrees_minutes(decimal_degrees):
 
 
 def decimal_degrees_to_degrees_minutes_seconds(decimal_degrees):
-    """
-    Convert decimal degrees to degrees, minutes and seconds.
+    """Convert decimal degrees to degrees, minutes and seconds.
 
     >>> from pygeomag import decimal_degrees_to_degrees_minutes_seconds
     >>> decimal_degrees_to_degrees_minutes_seconds(45.7625)
@@ -52,8 +49,7 @@ def decimal_degrees_to_degrees_minutes_seconds(decimal_degrees):
 
 
 def degrees_minutes_seconds_to_decimal_degrees(degrees, minutes, seconds):
-    """
-    Convert degrees, minutes and seconds  to decimal degrees.
+    """Convert degrees, minutes and seconds  to decimal degrees.
 
     >>> from pygeomag import degrees_minutes_seconds_to_decimal_degrees
     >>> degrees_minutes_seconds_to_decimal_degrees(45, 45, 45)
@@ -70,8 +66,7 @@ def degrees_minutes_seconds_to_decimal_degrees(degrees, minutes, seconds):
 
 
 def degrees_minutes_to_decimal_degrees(degrees, minutes):
-    """
-    Convert degrees and minutes  to decimal degrees (45.7625).
+    """Convert degrees and minutes  to decimal degrees (45.7625).
 
     >>> from pygeomag import degrees_minutes_to_decimal_degrees
     >>> degrees_minutes_to_decimal_degrees(45, 45.75)
@@ -85,9 +80,14 @@ def degrees_minutes_to_decimal_degrees(degrees, minutes):
     return degrees + minutes / 60
 
 
-def pretty_print_degrees(decimal_degrees, is_latitude, show_seconds=False, full_words=False, number_of_digits=0):
-    """
-    Format decimal degrees into a human-readable string.
+def pretty_print_degrees(
+    decimal_degrees,
+    is_latitude,
+    show_seconds=False,
+    full_words=False,
+    number_of_digits=0,
+):
+    """Format decimal degrees into a human-readable string.
 
     :param float, int decimal_degrees: Decimal degrees you want converted
     :param bool is_latitude: True for latitude, False for longitude
@@ -105,7 +105,9 @@ def pretty_print_degrees(decimal_degrees, is_latitude, show_seconds=False, full_
     '45 Degrees 45.75 Minutes North'
     """
     if show_seconds:
-        degrees, minutes, seconds = decimal_degrees_to_degrees_minutes_seconds(decimal_degrees)
+        degrees, minutes, seconds = decimal_degrees_to_degrees_minutes_seconds(
+            decimal_degrees
+        )
         seconds = round_to_digits(seconds, number_of_digits)
         string_format = "{degrees}{degrees_word} {minutes}{minutes_word} {seconds}{seconds_word} {ordinal_word}"
     else:
@@ -119,7 +121,7 @@ def pretty_print_degrees(decimal_degrees, is_latitude, show_seconds=False, full_
         minutes_word = " Minutes"
         seconds_word = " Seconds"
     else:
-        degrees_word = "\xB0"
+        degrees_word = "\xb0"
         minutes_word = "'"
         seconds_word = '"'
 

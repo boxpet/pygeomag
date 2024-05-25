@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-from pygeomag import __version__  # noqa E402 module level import not at top of file
+from pygeomag import __version__
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information

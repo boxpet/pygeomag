@@ -1,9 +1,16 @@
 import math
 
+WWM_MODEL_2015_LOWER = 2015.0
+WWM_MODEL_2015_UPPER = 2020.0
+WWM_MODEL_2020_LOWER = 2020.0
+WWM_MODEL_2020_UPPER = 2025.0
+
+BLACKOUT_ZONE = 2000
+CAUTION_ZONE = 6000
+
 
 class BlackoutZoneException(Exception):
-    """
-    Horizontal intensity is in a Blackout Zone.
+    """Horizontal intensity is in a Blackout Zone.
 
     The Blackout Zones are defined as regions around the north and south magnetic poles where the horizontal intensity
     of Earth's magnetic field (H) is less than 2000 nT. In these zones WMM declination values are inaccurate and
@@ -12,8 +19,7 @@ class BlackoutZoneException(Exception):
 
 
 class CautionZoneException(Exception):
-    """
-    Horizontal intensity is in a Caution Zone.
+    """Horizontal intensity is in a Caution Zone.
 
     A Caution Zone is an areas around a Blackout Zone where caution must be exercised while using a compass. It is
     defined where Earth's magnetic field (H) is between 2000 and 6000 nT. Compass accuracy may be degraded in this
@@ -22,8 +28,7 @@ class CautionZoneException(Exception):
 
 
 class GeoMagResult:
-    """
-    The Magnetic Components values from ``GeoMag.calculate()``.
+    """The Magnetic Components values from ``GeoMag.calculate()``.
 
     - **glat** *(float)* – Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
     - **glon** *(float)* – Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
@@ -83,13 +88,17 @@ class GeoMagResult:
     def calculate(self, raise_in_warning_zone):
         """Calculate extra result values."""
         # COMPUTE X, Y, Z, AND H COMPONENTS OF THE MAGNETIC FIELD
-        self.x = self.f * (math.cos(math.radians(self.d)) * math.cos(math.radians(self.i)))
-        self.y = self.f * (math.cos(math.radians(self.i)) * math.sin(math.radians(self.d)))
+        self.x = self.f * (
+            math.cos(math.radians(self.d)) * math.cos(math.radians(self.i))
+        )
+        self.y = self.f * (
+            math.cos(math.radians(self.i)) * math.sin(math.radians(self.d))
+        )
         self.z = self.f * (math.sin(math.radians(self.i)))
         self.h = self.f * (math.cos(math.radians(self.i)))
 
         # Check if in Caution or Blackout Zones
-        if self.h < 2000:
+        if self.h < BLACKOUT_ZONE:
             if raise_in_warning_zone:
                 raise BlackoutZoneException(
                     f"The horizontal field strength at this location is {self.h:.1f}. Compass readings have VERY LARGE "
@@ -97,7 +106,7 @@ class GeoMagResult:
                 )
             self.in_blackout_zone = True
 
-        elif self.h < 6000:
+        elif self.h < CAUTION_ZONE:
             if raise_in_warning_zone:
                 raise CautionZoneException(
                     f"The horizontal field strength at this location is {self.h:.1f}. Compass readings have large "
@@ -106,8 +115,7 @@ class GeoMagResult:
             self.in_caution_zone = True
 
     def calculate_uncertainty(self):
-        """
-        Calculate the uncertainty values for this ``GeoMagResult``.
+        """Calculate the uncertainty values for this ``GeoMagResult``.
 
         Uncertainty estimates provided by the **WMM2015** and **WMM2020** error model for the various field components.
         H is expressed in nT in the formula providing the error in D.
@@ -126,8 +134,7 @@ class GeoMagResult:
 
 
 class GeoMagUncertaintyResult:
-    """
-    The uncertainty values of a ``GeoMagResult``.
+    """The uncertainty values of a ``GeoMagResult``.
 
     - **f** *(float)* – Uncertainty of the Total Intensity in nT
     - **h** *(float)* – Uncertainty of the Horizontal Intensity in nT
@@ -147,9 +154,9 @@ class GeoMagUncertaintyResult:
         self.i = None
         self.d = None
 
-        if 2020.0 <= result.time <= 2025.0:
+        if WWM_MODEL_2020_LOWER <= result.time <= WWM_MODEL_2020_UPPER:
             self._error_model_wmm_2020(result)
-        elif 2015.0 <= result.time < 2020.0:
+        elif WWM_MODEL_2015_LOWER <= result.time < WWM_MODEL_2015_UPPER:
             self._error_model_wmm_2015(result)
         else:
             raise ValueError("GeoMagResult outside of known uncertainty estimates.")
@@ -176,8 +183,7 @@ class GeoMagUncertaintyResult:
 
 
 class GeoMag:
-    """
-    Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM).
+    """Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM).
 
     It defaults to using the WMM-2020 Coefficient file (WMM.COF) valid for 2020.0 - 2025.0.
 
@@ -197,8 +203,7 @@ class GeoMag:
     """
 
     def __init__(self, coefficients_file=None, coefficients_data=None):
-        """
-        Create a GeoMag instance.
+        """Create a GeoMag instance.
 
         Leaving both values as ``None`` will load the packages default coefficients file, supplying both will raise.
 
@@ -206,7 +211,9 @@ class GeoMag:
         :param str coefficients_data: coefficients data from a python module
         """
         if coefficients_file is not None and coefficients_data is not None:
-            raise ValueError("Both coefficients_file and coefficients_data supplied, supply none or only one.")
+            raise ValueError(
+                "Both coefficients_file and coefficients_data supplied, supply none or only one."
+            )
 
         self._coefficients_data = coefficients_data
         self._coefficients_file = coefficients_file
@@ -286,7 +293,7 @@ class GeoMag:
         except OSError:
             return wmm_filepath
 
-    def _load_coefficients(self):
+    def _load_coefficients(self):  # noqa: PLR0915 - Too many statements
         """Load the coefficients model to calculate the Magnetic Components from."""
         if self._epoch is not None:
             return
@@ -301,7 +308,9 @@ class GeoMag:
         if self._coefficients_data:
             (epoch, model, release_date), coefficients = self._coefficients_data
         else:
-            (epoch, model, release_date), coefficients = self._read_coefficients_data_from_file()
+            (epoch, model, release_date), coefficients = (
+                self._read_coefficients_data_from_file()
+            )
 
         # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
         c[0][0] = 0.0
@@ -326,10 +335,12 @@ class GeoMag:
             snorm[n] = snorm[n - 1] * float(2 * n - 1) / float(n)
             j = 2
             m = 0
-            D1 = 1  # noqa pyCharm: Variable in function should be lowercase
-            D2 = (n - m + D1) / D1  # noqa pyCharm: Variable in function should be lowercase
+            D1 = 1
+            D2 = (n - m + D1) / D1
             while D2 > 0:
-                k[m][n] = float(((n - 1) * (n - 1)) - (m * m)) / float((2 * n - 1) * (2 * n - 3))
+                k[m][n] = float(((n - 1) * (n - 1)) - (m * m)) / float(
+                    (2 * n - 1) * (2 * n - 3)
+                )
                 if m > 0:
                     flnmj = float((n - m + 1) * j) / float(n + m)
                     snorm[n + m * 13] = snorm[n + (m - 1) * 13] * math.sqrt(flnmj)
@@ -364,9 +375,11 @@ class GeoMag:
             # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
             line_data = coefficients_file.readline()
             line_values = line_data.split()
-            if len(line_values) != 3:
+            if len(line_values) != 3:  # noqa: PLR2004 Magic value used in comparison:
                 raise ValueError("Invalid header in model file")
-            epoch, model, release_date = (t(s) for t, s in zip((float, str, str), line_values))
+            epoch, model, release_date = (
+                t(s) for t, s in zip((float, str, str), line_values)
+            )
 
             while True:
                 line_data = coefficients_file.readline()
@@ -377,15 +390,18 @@ class GeoMag:
 
                 # END OF FILE NOT ENCOUNTERED, GET VALUES
                 line_values = line_data.split()
-                if len(line_values) != 6:
+                if len(line_values) != 6:  # noqa: PLR2004 Magic value used in comparison
                     raise ValueError("Corrupt record in model file")
-                n, m, gnm, hnm, dgnm, dhnm = (t(s) for t, s in zip((int, int, float, float, float, float), line_values))
+                n, m, gnm, hnm, dgnm, dhnm = (
+                    t(s)
+                    for t, s in zip((int, int, float, float, float, float), line_values)
+                )
 
                 data.append((n, m, gnm, hnm, dgnm, dhnm))
 
         return (epoch, model, release_date), data
 
-    def calculate(
+    def calculate(  # noqa: PLR0912,PLR0913,PLR0915 - Too many branches,Too many arguments,Too many statements
         self,
         glat,
         glon,
@@ -394,8 +410,7 @@ class GeoMag:
         allow_date_outside_lifespan=False,
         raise_in_warning_zone=False,
     ):
-        """
-        Calculate the Magnetic Components from a latitude, longitude, altitude and date.
+        """Calculate the Magnetic Components from a latitude, longitude, altitude and date.
 
         :param float glat: Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
         :param float glon: Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
@@ -454,7 +469,7 @@ class GeoMag:
         dt = time - self._epoch
         # TODO #1: Legacy C code static vars for speed
         # if otime < 0.0 and (dt < 0.0 or dt > 5.0) and not allow_date_past_lifespan:
-        if True and (dt < 0.0 or dt > 5.0) and not allow_date_outside_lifespan:
+        if True and (dt < 0.0 or dt > 5.0) and not allow_date_outside_lifespan:  # noqa: PLR2004 Magic value used in comparison:
             raise ValueError("Time extends beyond model 5-year life span")
 
         rlon = math.radians(glon)
@@ -494,8 +509,8 @@ class GeoMag:
         for n in range(1, self._maxord + 1):
             ar = ar * aor
             m = 0
-            D3 = 1  # noqa pyCharm: Variable in function should be lowercase
-            D4 = (n + m + D3) / D3  # noqa pyCharm: Variable in function should be lowercase
+            D3 = 1
+            D4 = (n + m + D3) / D3
             while D4 > 0:
                 # COMPUTE UNNORMALIZED ASSOCIATED LEGENDRE POLYNOMIALS
                 # AND DERIVATIVES VIA RECURSION RELATIONS
@@ -504,7 +519,9 @@ class GeoMag:
                 if True:
                     if n == m:
                         self._p[n + m * 13] = st * self._p[n - 1 + (m - 1) * 13]
-                        dp[m][n] = st * dp[m - 1][n - 1] + ct * self._p[n - 1 + (m - 1) * 13]
+                        dp[m][n] = (
+                            st * dp[m - 1][n - 1] + ct * self._p[n - 1 + (m - 1) * 13]
+                        )
                     elif n == 1 and m == 0:
                         self._p[n + m * 13] = ct * self._p[n - 1 + m * 13]
                         dp[m][n] = ct * dp[m][n - 1] - st * self._p[n - 1 + m * 13]
@@ -513,8 +530,15 @@ class GeoMag:
                             self._p[n - 2 + m * 13] = 0.0
                         if m > n - 2:
                             dp[m][n - 2] = 0.0
-                        self._p[n + m * 13] = ct * self._p[n - 1 + m * 13] - self._k[m][n] * self._p[n - 2 + m * 13]
-                        dp[m][n] = ct * dp[m][n - 1] - st * self._p[n - 1 + m * 13] - self._k[m][n] * dp[m][n - 2]
+                        self._p[n + m * 13] = (
+                            ct * self._p[n - 1 + m * 13]
+                            - self._k[m][n] * self._p[n - 2 + m * 13]
+                        )
+                        dp[m][n] = (
+                            ct * dp[m][n - 1]
+                            - st * self._p[n - 1 + m * 13]
+                            - self._k[m][n] * dp[m][n - 2]
+                        )
 
                 # TIME ADJUST THE GAUSS COEFFICIENTS
                 # TODO #1: Legacy C code static vars for speed
@@ -574,18 +598,18 @@ class GeoMag:
         #
         # OTHERWISE, SET MAGNETIC GRID VARIATION TO -999.0
         result.gv = gv_default = -999.0
-        if math.fabs(glat) >= 55.0:
+        if math.fabs(glat) >= 55.0:  # noqa: PLR2004 Magic value used in comparison
             if glat > 0.0 and glon >= 0.0:
                 result.gv = result.d - glon
-            if glat > 0.0 and glon < 0.0:  # noqa pyCharm: simplify chained comparison
+            if glat > 0.0 and glon < 0.0:
                 result.gv = result.d + math.fabs(glon)
-            if glat < 0.0 and glon >= 0.0:  # noqa pyCharm: simplify chained comparison
+            if glat < 0.0 and glon >= 0.0:
                 result.gv = result.d + glon
             if glat < 0.0 and glon < 0.0:
                 result.gv = result.d - math.fabs(glon)
-            if result.gv > +180.0:
+            if result.gv > +180.0:  # noqa: PLR2004 Magic value used in comparison
                 result.gv -= 360.0
-            if result.gv < -180.0:
+            if result.gv < -180.0:  # noqa: PLR2004 Magic value used in comparison
                 result.gv += 360.0
         if result.gv == gv_default:
             result.gv = None

@@ -13,6 +13,10 @@ from pygeomag.wmm.wmm_2015 import WMM_2015
 from pygeomag.wmm.wmm_2015v2 import WMM_2015v2
 from pygeomag.wmm.wmm_2020 import WMM_2020
 
+TEST_STYLE_0 = 0
+TEST_STYLE_1 = 1
+TEST_STYLE_2 = 2
+
 
 def get_test_filename(filename):
     return os.path.join(os.path.dirname(__file__), filename)
@@ -94,13 +98,15 @@ class TestGeoMagUncertaintyResult(TestCase):
     def test_time_out_of_supported_range(self):
         geo_mag = GeoMag()
         result = geo_mag.calculate(80, 0, 0, 2026.0, allow_date_outside_lifespan=True)
-        with self.assertRaisesRegex(ValueError, "GeoMagResult outside of known uncertainty estimates."):
+        with self.assertRaisesRegex(
+            ValueError, "GeoMagResult outside of known uncertainty estimates."
+        ):
             GeoMagUncertaintyResult(result)
 
 
 class TestGeoMagCoefficients(TestCase):
     def get_test_values(self, test_parameter, style):
-        if style == 0:
+        if style == TEST_STYLE_0:
             print(len(test_parameter.split()))
             time, alt, glat, glon, d, i, h, x, y, z, f, gv, _, _, _, _, _, _, _ = (
                 t(s)
@@ -130,7 +136,7 @@ class TestGeoMagCoefficients(TestCase):
                 )
             )
 
-        elif style == 1:
+        elif style == TEST_STYLE_1:
             time, alt, glat, glon, x, y, z, h, f, i, d, gv, _, _, _, _, _, _, _ = (
                 t(s)
                 for t, s in zip(
@@ -196,50 +202,102 @@ class TestGeoMagCoefficients(TestCase):
                 if test_parameter[0] == "#":
                     continue
 
-                time, alt, glat, glon, x, y, z, h, f, i, d, gv = self.get_test_values(test_parameter, style)
+                time, alt, glat, glon, x, y, z, h, f, i, d, gv = self.get_test_values(
+                    test_parameter, style
+                )
 
                 result = geo_mag.calculate(glat, glon, alt, time)
                 gv_test = -999 if result.gv is None else result.gv
 
-                self.assertAlmostEqual(x, result.x, 1, f"Row {row}: X (nT) expected {x}, result {result.x}")
-                self.assertAlmostEqual(y, result.y, 1, f"Row {row}: Y (nT) expected {y}, result {result.y}")
-                self.assertAlmostEqual(z, result.z, 1, f"Row {row}: Z (nT) expected {z}, result {result.z}")
-                self.assertAlmostEqual(h, result.h, 1, f"Row {row}: H (nT) expected {h}, result {result.h}")
-                self.assertAlmostEqual(f, result.f, 1, f"Row {row}: F (nT) expected {f}, result {result.f}")
-                self.assertAlmostEqual(i, result.i, 2, f"Row {row}: I (Deg) expected {i}, result {result.i}")
-                self.assertAlmostEqual(d, result.d, 2, f"Row {row}: D (Deg) expected {d}, result {result.d}")
-                if style != 2:
-                    self.assertAlmostEqual(gv, gv_test, 2, f"Row {row}: GV (Deg) expected {gv}, result {result.gv}")
+                self.assertAlmostEqual(
+                    x, result.x, 1, f"Row {row}: X (nT) expected {x}, result {result.x}"
+                )
+                self.assertAlmostEqual(
+                    y, result.y, 1, f"Row {row}: Y (nT) expected {y}, result {result.y}"
+                )
+                self.assertAlmostEqual(
+                    z, result.z, 1, f"Row {row}: Z (nT) expected {z}, result {result.z}"
+                )
+                self.assertAlmostEqual(
+                    h, result.h, 1, f"Row {row}: H (nT) expected {h}, result {result.h}"
+                )
+                self.assertAlmostEqual(
+                    f, result.f, 1, f"Row {row}: F (nT) expected {f}, result {result.f}"
+                )
+                self.assertAlmostEqual(
+                    i,
+                    result.i,
+                    2,
+                    f"Row {row}: I (Deg) expected {i}, result {result.i}",
+                )
+                self.assertAlmostEqual(
+                    d,
+                    result.d,
+                    2,
+                    f"Row {row}: D (Deg) expected {d}, result {result.d}",
+                )
+                if style != TEST_STYLE_2:
+                    self.assertAlmostEqual(
+                        gv,
+                        gv_test,
+                        2,
+                        f"Row {row}: GV (Deg) expected {gv}, result {result.gv}",
+                    )
 
     def test_calculate_declination_from_2010_wmm_style_0_file(self):
-        self.run_tests(GeoMag(coefficients_file="wmm/WMM_2010.COF"), "test_values/WMM2010testvalues.txt", 0)
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMM_2010.COF"),
+            "test_values/WMM2010testvalues.txt",
+            TEST_STYLE_0,
+        )
 
     def test_calculate_declination_from_2015_wmm_style_1_file(self):
-        self.run_tests(GeoMag(coefficients_file="wmm/WMM_2015.COF"), "test_values/WMM2015testvalues.txt", 1)
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMM_2015.COF"),
+            "test_values/WMM2015testvalues.txt",
+            TEST_STYLE_1,
+        )
 
     def test_calculate_declination_from_2015_wmm_style_1_data(self):
-        self.run_tests(GeoMag(coefficients_data=WMM_2015), "test_values/WMM2015testvalues.txt", 1)
+        self.run_tests(
+            GeoMag(coefficients_data=WMM_2015),
+            "test_values/WMM2015testvalues.txt",
+            TEST_STYLE_1,
+        )
 
     def test_calculate_declination_from_2015v2_wmm_style_1_file(self):
-        self.run_tests(GeoMag(coefficients_file="wmm/WMM_2015v2.COF"), "test_values/WMM2015v2testvalues.txt", 1)
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMM_2015v2.COF"),
+            "test_values/WMM2015v2testvalues.txt",
+            TEST_STYLE_1,
+        )
 
     def test_calculate_declination_from_2015v2_wmm_style_1_data(self):
-        self.run_tests(GeoMag(coefficients_data=WMM_2015v2), "test_values/WMM2015v2testvalues.txt", 1)
+        self.run_tests(
+            GeoMag(coefficients_data=WMM_2015v2),
+            "test_values/WMM2015v2testvalues.txt",
+            TEST_STYLE_1,
+        )
 
     def test_calculate_declination_from_2020_wmm_style_1_file(self):
         self.run_tests(GeoMag(), "test_values/WMM2020testvalues.txt", 1)
 
     def test_calculate_declination_from_2020_wmm_style_1_data(self):
-        self.run_tests(GeoMag(coefficients_data=WMM_2020), "test_values/WMM2020testvalues.txt", 1)
+        self.run_tests(
+            GeoMag(coefficients_data=WMM_2020),
+            "test_values/WMM2020testvalues.txt",
+            TEST_STYLE_1,
+        )
 
     def test_calculate_declination_from_2020_wmm_style_2(self):
-        self.run_tests(GeoMag(), "test_values/WMM2020_TEST_VALUES.txt", 2)
+        self.run_tests(GeoMag(), "test_values/WMM2020_TEST_VALUES.txt", TEST_STYLE_2)
 
 
 class TestGeoMag(TestCase):
     def test_both_parameters_supplied_raises(self):
         with self.assertRaisesRegex(
-            ValueError, "Both coefficients_file and coefficients_data supplied, supply none or only one."
+            ValueError,
+            "Both coefficients_file and coefficients_data supplied, supply none or only one.",
         ):
             GeoMag(coefficients_file="wmm/WMM_2020.COF", coefficients_data=WMM_2020)
 
@@ -250,7 +308,9 @@ class TestGeoMag(TestCase):
 
     def test_calculate_declination_time_beyond_model_raises(self):
         geo_mag = GeoMag()
-        with self.assertRaisesRegex(ValueError, "Time extends beyond model 5-year life span"):
+        with self.assertRaisesRegex(
+            ValueError, "Time extends beyond model 5-year life span"
+        ):
             geo_mag.calculate(0, 80, 0, 2030)
 
     def test_create_list(self):
@@ -286,7 +346,9 @@ class TestGeoMag(TestCase):
     def test_get_model_filename_default(self):
         geo_mag = GeoMag()
         model_filename = geo_mag._get_model_filename()
-        self.assertEqual(model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF"))
+        self.assertEqual(
+            model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF")
+        )
 
     def test_get_model_filename_default_not_in_wmm_path(self):
         m = mock_open(read_data="")
@@ -294,7 +356,9 @@ class TestGeoMag(TestCase):
         with patch("pygeomag.geomag.open", m):
             geo_mag = GeoMag()
             model_filename = geo_mag._get_model_filename()
-            self.assertEqual(model_filename[-16:], get_os_based_test_path("pygeomag/WMM.COF"))
+            self.assertEqual(
+                model_filename[-16:], get_os_based_test_path("pygeomag/WMM.COF")
+            )
         self.assertEqual(m.call_count, 2)
 
     def test_get_model_filename_default_when_neither_file_exists(self):
@@ -303,7 +367,9 @@ class TestGeoMag(TestCase):
         with patch("pygeomag.geomag.open", m):
             geo_mag = GeoMag()
             model_filename = geo_mag._get_model_filename()
-            self.assertEqual(model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF"))
+            self.assertEqual(
+                model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF")
+            )
         self.assertEqual(m.call_count, 2)
 
     def test_get_model_filename_different(self):
