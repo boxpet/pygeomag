@@ -6,7 +6,7 @@ Changelog
 
 2024-12-??
 
-*
+* Add 2025 coefficients file
 
 1.0.2
 -----

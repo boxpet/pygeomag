@@ -12,6 +12,7 @@ from pygeomag import (
 from pygeomag.wmm.wmm_2015 import WMM_2015
 from pygeomag.wmm.wmm_2015v2 import WMM_2015v2
 from pygeomag.wmm.wmm_2020 import WMM_2020
+from pygeomag.wmm.wmm_2025 import WMM_2025
 
 TEST_STYLE_0 = 0
 TEST_STYLE_1 = 1
@@ -28,7 +29,7 @@ def get_os_based_test_path(path):
 
 class TestGeoMagResult(TestCase):
     def test_calculate_uncertainty(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(80, 0, 0, 2020)
         uncertainty = result.calculate_uncertainty()
         self.assertIsInstance(uncertainty, GeoMagUncertaintyResult)
@@ -65,7 +66,7 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertEqual(uncertainty.i, 0.22)
 
     def test_static_values_2020(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(80, 0, 0, 2020)
         uncertainty = GeoMagUncertaintyResult(result)
         self.assertEqual(uncertainty.x, 131.0)
@@ -86,7 +87,7 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertAlmostEqual(uncertainty.d, 0.27, 2)
 
     def test_uncertainty_degrees_2022(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(80, 0, 0, 2020.0)
         uncertainty = GeoMagUncertaintyResult(result)
         self.assertAlmostEqual(uncertainty.d, 0.89, 2)
@@ -96,7 +97,7 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertAlmostEqual(uncertainty.d, 0.30, 2)
 
     def test_time_out_of_supported_range(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(80, 0, 0, 2026.0, allow_date_outside_lifespan=True)
         with self.assertRaisesRegex(
             ValueError, "GeoMagResult outside of known uncertainty estimates."
@@ -280,7 +281,11 @@ class TestGeoMagCoefficients(TestCase):
         )
 
     def test_calculate_declination_from_2020_wmm_style_1_file(self):
-        self.run_tests(GeoMag(), "test_values/WMM2020testvalues.txt", 1)
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMM_2020.COF"),
+            "test_values/WMM2020testvalues.txt",
+            TEST_STYLE_1,
+        )
 
     def test_calculate_declination_from_2020_wmm_style_1_data(self):
         self.run_tests(
@@ -289,8 +294,33 @@ class TestGeoMagCoefficients(TestCase):
             TEST_STYLE_1,
         )
 
-    def test_calculate_declination_from_2020_wmm_style_2(self):
-        self.run_tests(GeoMag(), "test_values/WMM2020_TEST_VALUES.txt", TEST_STYLE_2)
+    def test_calculate_declination_from_2020_wmm_style_2_file(self):
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMM_2020.COF"),
+            "test_values/WMM2020_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
+    def test_calculate_declination_from_2020_wmm_style_2_data(self):
+        self.run_tests(
+            GeoMag(coefficients_data=WMM_2020),
+            "test_values/WMM2020_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
+    def test_calculate_declination_from_2025_wmm_style_2_file(self):
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMM_2025.COF"),
+            "test_values/WMM2025_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
+    def test_calculate_declination_from_2025_wmm_style_2_data(self):
+        self.run_tests(
+            GeoMag(coefficients_data=WMM_2025),
+            "test_values/WMM2025_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
 
 
 class TestGeoMag(TestCase):
@@ -302,12 +332,12 @@ class TestGeoMag(TestCase):
             GeoMag(coefficients_file="wmm/WMM_2020.COF", coefficients_data=WMM_2020)
 
     def test_calculate_declination_time_beyond_model_bypass(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(0, 80, 0, 2030, allow_date_outside_lifespan=True)
         self.assertIsInstance(result, GeoMagResult)
 
     def test_calculate_declination_time_beyond_model_raises(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         with self.assertRaisesRegex(
             ValueError, "Time extends beyond model 5-year life span"
         ):
@@ -324,22 +354,22 @@ class TestGeoMag(TestCase):
         self.assertNotEqual(GeoMag._create_matrix(2, 4), [[1, 1, 1, 1], [1, 1, 1, 1]])
 
     def test_exception_blackout_zone_does_not_raise(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(90, 90, 0, 2020, raise_in_warning_zone=False)
         self.assertEqual(result.in_blackout_zone, True)
 
     def test_exception_blackout_zone_raises(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         with self.assertRaises(BlackoutZoneException):
             geo_mag.calculate(90, 90, 0, 2020, raise_in_warning_zone=True)
 
     def test_exception_caution_zone_does_not_raise(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(80, 80, 0, 2020, raise_in_warning_zone=False)
         self.assertEqual(result.in_caution_zone, True)
 
     def test_exception_caution_zone_raises(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         with self.assertRaises(CautionZoneException):
             geo_mag.calculate(80, 80, 0, 2020, raise_in_warning_zone=True)
 
@@ -401,11 +431,11 @@ class TestGeoMag(TestCase):
         maxord_11_value = -3.4655
         maxord_12_value = -3.4599
         self.assertNotEqual(maxord_11_value, maxord_12_value)
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         geo_mag._maxord = 11
         result = geo_mag.calculate(0, 80, 0, 2020)
         self.assertAlmostEqual(result.d, maxord_11_value, 4)
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         geo_mag._maxord = 12
         result = geo_mag.calculate(0, 80, 0, 2020)
         self.assertAlmostEqual(result.d, maxord_12_value, 4)
@@ -416,13 +446,13 @@ class TestGeoMag(TestCase):
             geo_mag.calculate(0, 80, 0, 2030)
 
     def test_property_life_span(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         self.assertTupleEqual(geo_mag.life_span, (2020.0, 2025.0))
 
     def test_property_model(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         self.assertEqual(geo_mag.model, "WMM-2020")
 
     def test_property_release_date(self):
-        geo_mag = GeoMag()
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         self.assertEqual(geo_mag.release_date, "12/10/2019")
