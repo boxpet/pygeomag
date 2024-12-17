@@ -83,32 +83,32 @@ Calculate the geomagnetic declination at the Space Needle in Seattle, WA:
 .. code-block:: pycon
 
    >>> from pygeomag import GeoMag
-   >>> geo_mag = GeoMag()
-   >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
+   >>> geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
+   >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2025.25)
    >>> print(result.d)
-   15.25942260585284
+   15.065629638512593
 
-And calculate it for the same spot 10 years ago:
+And calculate it for the same spot 12 years previous:
 
 .. code-block:: pycon
 
    >>> from pygeomag import GeoMag
    >>> geo_mag = GeoMag(coefficients_file='wmm/WMM_2010.COF')
-   >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2013.75)
+   >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2013.25)
    >>> print(result.d)
-   16.32554283003356
+   16.415602225952366
 
 Validation
 ----------
 
-All test values from the official NOAA WMM documentation are tested here for WMM-2020, WMM-2015v2, WMM-2015 and
-WMM-2010.
+All test values from the official NOAA WMM documentation are tested here for WMM-2025, WMM-2020, WMM-2015v2, WMM-2015
+and WMM-2010.
 
 Notes
 -----
 
-This is a direct port from the Legacy C code provided by NOAA. It defaults to using the WMM-2020 Coefficient file
-(WMM.COF) valid for 2020.0 - 2025.0. The code is specifically not 100% pythonic in order to make adding updates simple
+This is a direct port from the Legacy C code provided by NOAA. It defaults to using the WMM-2025 Coefficient file
+(WMM.COF) valid for 2025.0 - 2030.0. The code is specifically not 100% pythonic in order to make adding updates simple
 (for example uppercase variable names).
 
 At this point Annual change also known as Secular Variation is not in this package the Legacy C version does a direct

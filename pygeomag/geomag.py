@@ -124,7 +124,7 @@ class GeoMagResult:
         outside this will raise an Exception
 
         >>> from pygeomag import GeoMag
-        >>> geo_mag = GeoMag()
+        >>> geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
         >>> uncertainty = result.calculate_uncertainty()
         >>> print(uncertainty.d)
@@ -195,7 +195,9 @@ class GeoMag:
        ==============  ==========  ===============  ==========
        File            Model       Life Span        Creation
        ==============  ==========  ===============  ==========
-       WMM.COF         WMM-2020    2020.0 - 2025.0  12/10/2019
+       WMM.COF         WMM-2025    2025.0 - 2030.0  11/13/2024
+       WMM_2025.COF    WMM-2025    2025.0 - 2030.0  11/13/2024
+       WMM_2020.COF    WMM-2020    2020.0 - 2025.0  12/10/2019
        WMM_2015v2.COF  WMM-2015v2  2015.0 - 2020.0  09/18/2018
        WMM_2015.COF    WMM-2015    2015.0 - 2020.0  12/15/2014
        WMM_2010.COF    WMM-2010    2010.0 - 2015.0  11/20/2009
@@ -415,7 +417,7 @@ class GeoMag:
         :param float glat: Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
         :param float glon: Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
         :param float alt: Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
-        :param float time: Time (in decimal year), 2020.0 to 2025.0
+        :param float time: Time (in decimal year), 2025.0 to 2030.0 (unless you specified a different coefficient file)
         :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :param bool raise_in_warning_zone: True if you want to raise a BlackoutZoneException or CautionZoneException
             exception when the horizontal intensity is < 6000
@@ -424,18 +426,18 @@ class GeoMag:
         Calculate the geomagnetic declination at the Space Needle in Seattle, WA:
 
         >>> from pygeomag import GeoMag
-        >>> geo_mag = GeoMag()
-        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2023.75)
+        >>> geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
+        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2025.25)
         >>> print(result.d)
-        15.25942260585284
+        15.065629638512593
 
-        And calculate it for the same spot 10 years ago:
+        And calculate it for the same spot 12 years previous:
 
         >>> from pygeomag import GeoMag
         >>> geo_mag = GeoMag(coefficients_file='wmm/WMM_2010.COF')
-        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2013.75)
+        >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2013.25)
         >>> print(result.d)
-        16.32554283003356
+        16.415602225952366
         """
         tc = self._create_matrix(13, 13)
         dp = self._create_matrix(13, 13)

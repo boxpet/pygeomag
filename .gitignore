@@ -164,3 +164,6 @@ test-results/
 
 # Compiled MicroPython files
 *.mpy
+
+# ZIP files
+*.zip
