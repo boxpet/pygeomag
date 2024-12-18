@@ -3,12 +3,14 @@ import sys
 
 if not sys.implementation.name == "circuitpython":
     import datetime
-    from typing import List, Tuple, Union
+    from typing import Any, List, Tuple, Union
 
 WWM_MODEL_2015_LOWER = 2015.0
 WWM_MODEL_2015_UPPER = 2020.0
 WWM_MODEL_2020_LOWER = 2020.0
 WWM_MODEL_2020_UPPER = 2025.0
+WWM_MODEL_2025_LOWER = 2025.0
+WWM_MODEL_2025_UPPER = 2030.0
 
 BLACKOUT_ZONE = 2000
 CAUTION_ZONE = 6000
@@ -35,7 +37,7 @@ class CautionZoneException(Exception):
 class GeoMagUncertaintyResult:
     """The uncertainty values of a ``GeoMagResult``."""
 
-    def __init__(self, result) -> None:
+    def __init__(self, result: "GeoMagResult") -> None:
         self.x: float = None
         """Uncertainty of the North Component in nT."""
         self.y: float = None
@@ -51,14 +53,16 @@ class GeoMagUncertaintyResult:
         self.d: float = None
         """Uncertainty of the Geomagnetic Declination (Magnetic Variation) in degrees."""
 
-        if WWM_MODEL_2020_LOWER <= result.time <= WWM_MODEL_2020_UPPER:
+        if WWM_MODEL_2025_LOWER <= result.time <= WWM_MODEL_2025_UPPER:
+            self._error_model_wmm_2025(result)
+        elif WWM_MODEL_2020_LOWER <= result.time <= WWM_MODEL_2020_UPPER:
             self._error_model_wmm_2020(result)
         elif WWM_MODEL_2015_LOWER <= result.time < WWM_MODEL_2015_UPPER:
             self._error_model_wmm_2015(result)
         else:
             raise ValueError("GeoMagResult outside of known uncertainty estimates.")
 
-    def _error_model_wmm_2015(self, result) -> None:
+    def _error_model_wmm_2015(self, result: "GeoMagResult") -> None:
         """Calculate uncertainty estimates for 2015.0 to 2020.0."""
         self.x = 138.0
         self.y = 89.0
@@ -68,7 +72,7 @@ class GeoMagUncertaintyResult:
         self.i = 0.22
         self.d = math.sqrt(0.23**2 + (5430 / result.h) ** 2)
 
-    def _error_model_wmm_2020(self, result) -> None:
+    def _error_model_wmm_2020(self, result: "GeoMagResult") -> None:
         """Calculate uncertainty estimates for 2020.0 to 2025.0."""
         self.x = 131.0
         self.y = 94.0
@@ -77,6 +81,16 @@ class GeoMagUncertaintyResult:
         self.f = 148.0
         self.i = 0.21
         self.d = math.sqrt(0.26**2 + (5625 / result.h) ** 2)
+
+    def _error_model_wmm_2025(self, result: "GeoMagResult") -> None:
+        """Calculate uncertainty estimates for 2025.0 to 2030.0."""
+        self.x = 137.0
+        self.y = 89.0
+        self.z = 141.0
+        self.h = 133.0
+        self.f = 138.0
+        self.i = 0.20
+        self.d = math.sqrt(0.26**2 + (5417 / result.h) ** 2)
 
 
 class GeoMagResult:
@@ -169,10 +183,10 @@ class GeoMagResult:
     def calculate_uncertainty(self) -> GeoMagUncertaintyResult:
         """Calculate the uncertainty values for this ``GeoMagResult``.
 
-        Uncertainty estimates provided by the **WMM2015** and **WMM2020** error model for the various field components.
+        Uncertainty estimates provided by the **WMM2015**, **WMM2020**, and **WMM2025** error model for the various field components.
         H is expressed in nT in the formula providing the error in D.
 
-        These values can currently only be computed for ``GeoMagResult`` between 2015.0 and 2025.0 and using a value
+        These values can currently only be computed for ``GeoMagResult`` between 2015.0 and 2030.0 and using a value
         outside this will raise an Exception
 
         :return: A GeoMagUncertaintyResult object
@@ -190,7 +204,7 @@ class GeoMagResult:
 class GeoMag:
     """Python port of the Legacy C code provided by NOAA for the World Magnetic Model (WMM).
 
-    It defaults to using the WMM-2020 Coefficient file (WMM.COF) valid for 2020.0 - 2025.0.
+    It defaults to using the WMM-2025 Coefficient file (WMM.COF) valid for 2025.0 - 2030.0.
 
     Included are the following coefficient files, if you have the need to calculate past values:
 
@@ -213,19 +227,50 @@ class GeoMag:
         self,
         coefficients_file: str = None,
         coefficients_data: Tuple = None,
+        base_year: Union[str, datetime.datetime] = None,
     ) -> None:
         """Create a GeoMag instance.
 
-        Leaving both values as ``None`` will load the packages default coefficients file, supplying both will raise.
+        There are 4 methods of initialization:
+
+        >>> from pygeomag import GeoMag
+        >>> from pygeomag.wmm.wmm_2025 import WMM_2025
+        >>>
+        >>> # Have it default to the latest coefficients file:
+        >>> geo_mag = GeoMag()
+        >>>
+        >>> # Specify a coefficients file:
+        >>> geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
+        >>>
+        >>> # Specify coefficients data:
+        >>> geo_mag = GeoMag(coefficients_data=WMM_2025)
+        >>>
+        >>> # Specify either a base year as a int/float:
+        >>> geo_mag = GeoMag(base_year=2025)
+        >>> # or pass in an object that has a year property:
+        >>> geo_mag = GeoMag(base_year=datetime.datetime.now())
+
+        Leaving all values as ``None`` will load the packages default coefficients file, supplying multiple will raise.
 
         :param str coefficients_file: Full or relative path to a coefficients file supplied by this package or WMM
-        :param str coefficients_data: coefficients data from a python module
+        :param Tuple coefficients_data: coefficients data from a python module
+        :param Union[str, datetime.datetime] base_year: a year you want to use to auto select the correct coefficients data
         """
-        if coefficients_file is not None and coefficients_data is not None:
+        if (
+            len(
+                [
+                    option
+                    for option in [coefficients_file, coefficients_data, base_year]
+                    if option is not None
+                ]
+            )
+            > 1
+        ):
             raise ValueError(
-                "Both coefficients_file and coefficients_data supplied, supply none or only one."
+                "Only one of coefficients_file, coefficients_data, base_year can be set."
             )
 
+        self._base_year = base_year
         self._coefficients_data = coefficients_data
         self._coefficients_file = coefficients_file
         self._maxord = 12
@@ -264,14 +309,29 @@ class GeoMag:
         return self._release_date
 
     @classmethod
-    def _create_list(cls, length: int, default=None) -> List:
+    def _create_list(cls, length: int, default: Any = None) -> List:
         """Create a list of length with an optional default."""
         return [default] * length
 
     @classmethod
-    def _create_matrix(cls, rows: int, columns: int, default=None) -> List:
+    def _create_matrix(cls, rows: int, columns: int, default: Any = None) -> List:
         """Create a 2 dimensional matrix of length with an optional default."""
         return [[default for _ in range(columns)] for _ in range(rows)]
+
+    @classmethod
+    def _get_coefficients_year(cls, year: Union[str, datetime.datetime]) -> str:
+        year_value = getattr(year, "year", year)
+
+        if 2025 <= year_value < 2030:  # noqa: PLR2004 Magic value used in comparison
+            return "2025"
+        elif 2020 <= year_value < 2025:  # noqa: PLR2004 Magic value used in comparison
+            return "2020"
+        elif 2015 <= year_value < 2020:  # noqa: PLR2004 Magic value used in comparison
+            return "2015v2"
+        elif 2010 <= year_value < 2025:  # noqa: PLR2004 Magic value used in comparison
+            return "2010"
+        else:
+            raise ValueError(f"There are no coefficients for the year {year_value}")
 
     def _get_model_filename(self) -> str:
         """Determine the model filename to load the coefficients from."""
@@ -286,7 +346,12 @@ class GeoMag:
         if self._coefficients_file:
             return filepath.replace(filename, self._coefficients_file)
 
-        coefficients_file = f"wmm{sep}WMM.COF"
+        if self._base_year:
+            year = f"_{self._get_coefficients_year(self._base_year)}"
+        else:
+            year = ""
+
+        coefficients_file = f"wmm{sep}WMM{year}.COF"
         wmm_filepath = filepath.replace(filename, coefficients_file)
         try:
             with open(wmm_filepath):

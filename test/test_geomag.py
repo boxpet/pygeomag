@@ -1,4 +1,6 @@
+import datetime
 import os
+from decimal import Decimal
 from unittest import TestCase
 from unittest.mock import DEFAULT, mock_open, patch
 
@@ -76,6 +78,17 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertEqual(uncertainty.f, 148.0)
         self.assertEqual(uncertainty.i, 0.21)
 
+    def test_static_values_2025(self):
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
+        result = geo_mag.calculate(80, 0, 0, 2025)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertEqual(uncertainty.x, 137.0)
+        self.assertEqual(uncertainty.y, 89.0)
+        self.assertEqual(uncertainty.z, 141.0)
+        self.assertEqual(uncertainty.h, 133.0)
+        self.assertEqual(uncertainty.f, 138.0)
+        self.assertEqual(uncertainty.i, 0.20)
+
     def test_uncertainty_degrees_2015(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2015.COF")
         result = geo_mag.calculate(80, 0, 0, 2015.0)
@@ -97,8 +110,8 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertAlmostEqual(uncertainty.d, 0.30, 2)
 
     def test_time_out_of_supported_range(self):
-        geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
-        result = geo_mag.calculate(80, 0, 0, 2026.0, allow_date_outside_lifespan=True)
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
+        result = geo_mag.calculate(80, 0, 0, 2031.0, allow_date_outside_lifespan=True)
         with self.assertRaisesRegex(
             ValueError, "GeoMagResult outside of known uncertainty estimates."
         ):
@@ -322,15 +335,15 @@ class TestGeoMagCoefficients(TestCase):
             TEST_STYLE_2,
         )
 
+    def test_calculate_declination_from_2025_wmm_style_2_year(self):
+        self.run_tests(
+            GeoMag(base_year=2026),
+            "test_values/WMM2025_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
 
 class TestGeoMag(TestCase):
-    def test_both_parameters_supplied_raises(self):
-        with self.assertRaisesRegex(
-            ValueError,
-            "Both coefficients_file and coefficients_data supplied, supply none or only one.",
-        ):
-            GeoMag(coefficients_file="wmm/WMM_2020.COF", coefficients_data=WMM_2020)
-
     def test_calculate_declination_time_beyond_model_bypass(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(0, 80, 0, 2030, allow_date_outside_lifespan=True)
@@ -372,6 +385,38 @@ class TestGeoMag(TestCase):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         with self.assertRaises(CautionZoneException):
             geo_mag.calculate(80, 80, 0, 2020, raise_in_warning_zone=True)
+
+    def test_exception_get_coefficients_year_pre_2010(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "There are no coefficients for the year 2009",
+        ):
+            GeoMag._get_coefficients_year(2009)
+
+    def test_exception_get_coefficients_year_post_2029(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "There are no coefficients for the year 2030",
+        ):
+            GeoMag._get_coefficients_year(2030)
+
+    def test_get_coefficients_year(self):
+        self.assertEqual(GeoMag._get_coefficients_year(2010), "2010")
+        self.assertEqual(GeoMag._get_coefficients_year(2014), "2010")
+        self.assertEqual(GeoMag._get_coefficients_year(2015), "2015v2")
+        self.assertEqual(GeoMag._get_coefficients_year(2019), "2015v2")
+        self.assertEqual(GeoMag._get_coefficients_year(2020), "2020")
+        self.assertEqual(GeoMag._get_coefficients_year(2024), "2020")
+        self.assertEqual(GeoMag._get_coefficients_year(2025), "2025")
+        self.assertEqual(GeoMag._get_coefficients_year(2029), "2025")
+        self.assertEqual(GeoMag._get_coefficients_year(2025.0), "2025")
+        self.assertEqual(GeoMag._get_coefficients_year(Decimal("2025.0")), "2025")
+        self.assertEqual(
+            GeoMag._get_coefficients_year(datetime.datetime(2025, 1, 1)), "2025"
+        )
+        self.assertEqual(
+            GeoMag._get_coefficients_year(datetime.date(2025, 1, 1)), "2025"
+        )
 
     def test_get_model_filename_default(self):
         geo_mag = GeoMag()
@@ -444,6 +489,32 @@ class TestGeoMag(TestCase):
         geo_mag = GeoMag(coefficients_file="missing.cof")
         with self.assertRaisesRegex(FileNotFoundError, "No such file or directory"):
             geo_mag.calculate(0, 80, 0, 2030)
+
+    def test_multiple_parameters_supplied_raises(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Only one of coefficients_file, coefficients_data, base_year can be set.",
+        ):
+            GeoMag(coefficients_file="wmm/WMM_2020.COF", coefficients_data=WMM_2020)
+        with self.assertRaisesRegex(
+            ValueError,
+            "Only one of coefficients_file, coefficients_data, base_year can be set.",
+        ):
+            GeoMag(coefficients_file="wmm/WMM_2020.COF", base_year=2020)
+        with self.assertRaisesRegex(
+            ValueError,
+            "Only one of coefficients_file, coefficients_data, base_year can be set.",
+        ):
+            GeoMag(coefficients_data=WMM_2020, base_year=2020)
+        with self.assertRaisesRegex(
+            ValueError,
+            "Only one of coefficients_file, coefficients_data, base_year can be set.",
+        ):
+            GeoMag(
+                coefficients_file="wmm/WMM_2020.COF",
+                coefficients_data=WMM_2020,
+                base_year=2020,
+            )
 
     def test_property_life_span(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
