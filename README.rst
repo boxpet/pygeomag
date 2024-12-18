@@ -66,6 +66,20 @@ lightweight versions (like MicroPython and CircuitPython).
    The U.S. Department of Defense, the U.K. Ministry of Defence, the North Atlantic Treaty Organization (NATO), and the
    International Hydrographic Organization (IHO) use the WMM.
 
+High Resolution
+---------------
+
+Starting in 2025, a high resolution model was released you can read more about it here:
+`World Magnetic Model High Resolution (WMMHR) <https://www.ncei.noaa.gov/products/world-magnetic-model-high-resolution>`_
+
+**From NOAA**
+
+    The World Magnetic Model High Resolution (WMMHR) is an advanced geomagnetic field model that provides a more detailed,
+    accurate depiction of the geomagnetic field than the World Magnetic Model (WMM). WMMHR2025 includes core field and
+    secular variation coefficients for degrees n = 1 to 15. This model also covers the crustal field (from n=16 through
+    n=133).  As a result, it has more coefficients ((18,210 non-zero coefficients instead of 336) and more digits (4 instead
+    of 1) in each coefficient.
+
 Installation
 ------------
 
@@ -97,6 +111,16 @@ And calculate it for the same spot 12 years previous:
    >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2013.25)
    >>> print(result.d)
    16.415602225952366
+
+And calculate it for the same spot using the high resolution model:
+
+.. code-block:: pycon
+
+   >>> from pygeomag import GeoMag
+   >>> geo_mag = GeoMag(coefficients_file='wmm/WMMHR_2025.COF', high_resolution=True)
+   >>> result = geo_mag.calculate(glat=47.6205, glon=-122.3493, alt=0, time=2025.00)
+   >>> print(result.d)
+   15.017316292177854
 
 Validation
 ----------
