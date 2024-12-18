@@ -39,13 +39,13 @@ In the last 10 years, it's dropped just over a full degree in the Greater Seattl
 To help see how much the magnetic field changes as you travel across the globe, here is projection for 2020 from
 NOAA:
 
-.. image:: https://www.ncei.noaa.gov/sites/default/files/2022-02/Miller%20Projection%20Main%20Field-%20Annual%20Change%20Declination%20%28D%29.jpg
-   :alt: US/UK World Magnetic Model - Epoch 2020.0: Main Field Declination
+.. image:: https://www.ncei.noaa.gov/sites/g/files/anmtlf171/files/inline-images/D.jpg
+   :alt: US/UK World Magnetic Model - Epoch 2025.0: Main Field Declination (D)
 
 To see how much the value changes per year (The contour interval is 2 arcminutes/year):
 
-.. image:: https://www.ncei.noaa.gov/sites/default/files/2022-02/Miller%20Projection%20Secular%20Variation-%20Annual%20Change%20Declination%20%28D%29.jpg
-   :alt: US/UK World Magnetic Model - Epoch 2020.0: Annual Change Declination
+.. image:: https://www.ncei.noaa.gov/sites/g/files/anmtlf171/files/inline-images/D_SV.jpg
+   :alt: US/UK World Magnetic Model - Epoch 2025.0: Annual Change Declination (D)
 
 If you want to look up these values, you can use NOAA's
 `Magnetic Field Caculators <https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml>`_ in a browser or install their

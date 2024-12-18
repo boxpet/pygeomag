@@ -1,4 +1,9 @@
 import math
+import sys
+
+if not sys.implementation.name == "circuitpython":
+    import datetime
+    from typing import List, Tuple, Union
 
 WWM_MODEL_2015_LOWER = 2015.0
 WWM_MODEL_2015_UPPER = 2020.0
@@ -27,65 +32,112 @@ class CautionZoneException(Exception):
     """
 
 
+class GeoMagUncertaintyResult:
+    """The uncertainty values of a ``GeoMagResult``."""
+
+    def __init__(self, result) -> None:
+        self.x: float = None
+        """Uncertainty of the North Component in nT."""
+        self.y: float = None
+        """Uncertainty of the East Component in nT."""
+        self.z: float = None
+        """Uncertainty of the Vertical Component in nT."""
+        self.h: float = None
+        """Uncertainty of the Horizontal Intensity in nT."""
+        self.f: float = None
+        """Uncertainty of the Total Intensity in nT."""
+        self.i: float = None
+        """Uncertainty of the Geomagnetic Inclination in degrees."""
+        self.d: float = None
+        """Uncertainty of the Geomagnetic Declination (Magnetic Variation) in degrees."""
+
+        if WWM_MODEL_2020_LOWER <= result.time <= WWM_MODEL_2020_UPPER:
+            self._error_model_wmm_2020(result)
+        elif WWM_MODEL_2015_LOWER <= result.time < WWM_MODEL_2015_UPPER:
+            self._error_model_wmm_2015(result)
+        else:
+            raise ValueError("GeoMagResult outside of known uncertainty estimates.")
+
+    def _error_model_wmm_2015(self, result) -> None:
+        """Calculate uncertainty estimates for 2015.0 to 2020.0."""
+        self.x = 138.0
+        self.y = 89.0
+        self.z = 165.0
+        self.h = 133.0
+        self.f = 152.0
+        self.i = 0.22
+        self.d = math.sqrt(0.23**2 + (5430 / result.h) ** 2)
+
+    def _error_model_wmm_2020(self, result) -> None:
+        """Calculate uncertainty estimates for 2020.0 to 2025.0."""
+        self.x = 131.0
+        self.y = 94.0
+        self.z = 157.0
+        self.h = 128.0
+        self.f = 148.0
+        self.i = 0.21
+        self.d = math.sqrt(0.26**2 + (5625 / result.h) ** 2)
+
+
 class GeoMagResult:
-    """The Magnetic Components values from ``GeoMag.calculate()``.
+    """The Magnetic Components values from ``GeoMag.calculate()``."""
 
-    - **glat** *(float)* – Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
-    - **glon** *(float)* – Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
-    - **alt** *(float)* – Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
-    - **time** *(float)* – Time (in decimal year), 2020.0 to 2025.0
-    - **f**, **.ti**, **.total_intensity** *(float)* – Total Intensity
-    - **h** *(float)* – Horizontal Intensity
-    - **x** *(float)* – North Component
-    - **y** *(float)* – East Component
-    - **z** *(float)* – Vertical Component
-    - **i**, **.dip**, **.inclination** *(float)* – Geomagnetic Inclination
-    - **d**, **.dec** *(float)* – Geomagnetic Declination (Magnetic Variation)
-    - **gv** *(float)* – Magnetic grid variation if the current geodetic position is in the arctic or antarctic
-    """
-
-    def __init__(self, time, alt, glat, glon):
-        self.time = time
-        self.alt = alt
-        self.glat = glat
-        self.glon = glon
-        self.x = None
-        self.y = None
-        self.z = None
-        self.h = None
-        self.f = None
-        self.i = None
-        self.d = None
-        self.gv = None
-        self.in_blackout_zone = False
-        self.in_caution_zone = False
+    def __init__(self, time: float, alt: float, glat: float, glon: float) -> None:
+        self.time: float = time
+        """Time (in decimal year)."""
+        self.alt: float = alt
+        """Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)."""
+        self.glat: float = glat
+        """Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)."""
+        self.glon: float = glon
+        """Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)."""
+        self.x: float = None
+        """North Component."""
+        self.y: float = None
+        """East Component."""
+        self.z: float = None
+        """Vertical Component."""
+        self.h: float = None
+        """Horizontal Intensity."""
+        self.f: float = None
+        """Total Intensity."""
+        self.i: float = None
+        """Geomagnetic Inclination."""
+        self.d: float = None
+        """Geomagnetic Declination (Magnetic Variation)."""
+        self.gv: float = None
+        """Magnetic grid variation if the current geodetic position is in the arctic or antarctic."""
+        self.in_blackout_zone: bool = False
+        """Horizontal intensity is in a Blackout Zone."""
+        self.in_caution_zone: bool = False
+        """Horizontal intensity is in a Caution Zone."""
 
     @property
-    def dec(self):
-        """Additional name for variable d."""
+    def dec(self) -> float:
+        """Geomagnetic Declination (Magnetic Variation)."""
         return self.d
 
     @property
-    def dip(self):
-        """Additional name for variable i."""
+    def dip(self) -> float:
+        """Geomagnetic Inclination."""
         return self.i
 
     @property
-    def inclination(self):
-        """Additional name for variable i."""
+    def inclination(self) -> float:
+        """Geomagnetic Inclination."""
         return self.i
 
     @property
-    def ti(self):
-        """Additional name for variable f."""
+    def ti(self) -> float:
+        """Total Intensity."""
         return self.f
 
     @property
-    def total_intensity(self):
-        """Additional name for variable f."""
+    def total_intensity(self) -> float:
+        """Total Intensity."""
         return self.f
 
-    def calculate(self, raise_in_warning_zone):
+    def calculate(self, raise_in_warning_zone: bool) -> None:
         """Calculate extra result values."""
         # COMPUTE X, Y, Z, AND H COMPONENTS OF THE MAGNETIC FIELD
         self.x = self.f * (
@@ -114,7 +166,7 @@ class GeoMagResult:
                 )
             self.in_caution_zone = True
 
-    def calculate_uncertainty(self):
+    def calculate_uncertainty(self) -> GeoMagUncertaintyResult:
         """Calculate the uncertainty values for this ``GeoMagResult``.
 
         Uncertainty estimates provided by the **WMM2015** and **WMM2020** error model for the various field components.
@@ -122,6 +174,8 @@ class GeoMagResult:
 
         These values can currently only be computed for ``GeoMagResult`` between 2015.0 and 2025.0 and using a value
         outside this will raise an Exception
+
+        :return: A GeoMagUncertaintyResult object
 
         >>> from pygeomag import GeoMag
         >>> geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
@@ -131,55 +185,6 @@ class GeoMagResult:
         0.3935273117953904
         """
         return GeoMagUncertaintyResult(self)
-
-
-class GeoMagUncertaintyResult:
-    """The uncertainty values of a ``GeoMagResult``.
-
-    - **f** *(float)* – Uncertainty of the Total Intensity in nT
-    - **h** *(float)* – Uncertainty of the Horizontal Intensity in nT
-    - **x** *(float)* – Uncertainty of the North Component in nT
-    - **y** *(float)* – Uncertainty of the East Component in nT
-    - **z** *(float)* – Uncertainty of the Vertical Component in nT
-    - **i** *(float)* – Uncertainty of the Geomagnetic Inclination in degrees
-    - **d** *(float)* – Uncertainty of the Geomagnetic Declination (Magnetic Variation) in degrees
-    """
-
-    def __init__(self, result):
-        self.x = None
-        self.y = None
-        self.z = None
-        self.h = None
-        self.f = None
-        self.i = None
-        self.d = None
-
-        if WWM_MODEL_2020_LOWER <= result.time <= WWM_MODEL_2020_UPPER:
-            self._error_model_wmm_2020(result)
-        elif WWM_MODEL_2015_LOWER <= result.time < WWM_MODEL_2015_UPPER:
-            self._error_model_wmm_2015(result)
-        else:
-            raise ValueError("GeoMagResult outside of known uncertainty estimates.")
-
-    def _error_model_wmm_2015(self, result):
-        """Calculate uncertainty estimates for 2015.0 to 2020.0."""
-        self.x = 138.0
-        self.y = 89.0
-        self.z = 165.0
-        self.h = 133.0
-        self.f = 152.0
-        self.i = 0.22
-        self.d = math.sqrt(0.23**2 + (5430 / result.h) ** 2)
-
-    def _error_model_wmm_2020(self, result):
-        """Calculate uncertainty estimates for 2020.0 to 2025.0."""
-        self.x = 131.0
-        self.y = 94.0
-        self.z = 157.0
-        self.h = 128.0
-        self.f = 148.0
-        self.i = 0.21
-        self.d = math.sqrt(0.26**2 + (5625 / result.h) ** 2)
 
 
 class GeoMag:
@@ -204,7 +209,11 @@ class GeoMag:
        ==============  ==========  ===============  ==========
     """
 
-    def __init__(self, coefficients_file=None, coefficients_data=None):
+    def __init__(
+        self,
+        coefficients_file: str = None,
+        coefficients_data: Tuple = None,
+    ) -> None:
         """Create a GeoMag instance.
 
         Leaving both values as ``None`` will load the packages default coefficients file, supplying both will raise.
@@ -231,7 +240,7 @@ class GeoMag:
         self._k = None
 
     @property
-    def life_span(self):
+    def life_span(self) -> Tuple[float, float]:
         """Return the life span for the selected coefficient file."""
         if self._epoch is None:
             self._load_coefficients()
@@ -239,7 +248,7 @@ class GeoMag:
         return self._epoch, self._epoch + 5
 
     @property
-    def model(self):
+    def model(self) -> str:
         """Return the model name for the selected coefficient file."""
         if self._epoch is None:
             self._load_coefficients()
@@ -247,7 +256,7 @@ class GeoMag:
         return self._model
 
     @property
-    def release_date(self):
+    def release_date(self) -> str:
         """Return the release date for the selected coefficient file."""
         if self._epoch is None:
             self._load_coefficients()
@@ -255,16 +264,16 @@ class GeoMag:
         return self._release_date
 
     @classmethod
-    def _create_list(cls, length, default=None):
+    def _create_list(cls, length: int, default=None) -> List:
         """Create a list of length with an optional default."""
         return [default] * length
 
     @classmethod
-    def _create_matrix(cls, rows, columns, default=None):
+    def _create_matrix(cls, rows: int, columns: int, default=None) -> List:
         """Create a 2 dimensional matrix of length with an optional default."""
         return [[default for _ in range(columns)] for _ in range(rows)]
 
-    def _get_model_filename(self):
+    def _get_model_filename(self) -> str:
         """Determine the model filename to load the coefficients from."""
         # some lightweight versions of Python won't have access to methods like "os.path.dirname"
         if self._coefficients_file and self._coefficients_file[0] in "\\/":
@@ -295,7 +304,7 @@ class GeoMag:
         except OSError:
             return wmm_filepath
 
-    def _load_coefficients(self):  # noqa: PLR0915 - Too many statements
+    def _load_coefficients(self) -> None:  # noqa: PLR0915 - Too many statements
         """Load the coefficients model to calculate the Magnetic Components from."""
         if self._epoch is not None:
             return
@@ -367,7 +376,7 @@ class GeoMag:
         self._fm = fm
         self._k = k
 
-    def _read_coefficients_data_from_file(self):
+    def _read_coefficients_data_from_file(self) -> Tuple[Tuple[str, str, str], list]:
         """Read coefficients data from file to be processed by ``_load_coefficients``."""
         data = []
 
@@ -377,7 +386,7 @@ class GeoMag:
             # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
             line_data = coefficients_file.readline()
             line_values = line_data.split()
-            if len(line_values) != 3:  # noqa: PLR2004 Magic value used in comparison:
+            if len(line_values) != 3:  # noqa: PLR2004 Magic value used in comparison
                 raise ValueError("Invalid header in model file")
             epoch, model, release_date = (
                 t(s) for t, s in zip((float, str, str), line_values)
@@ -405,23 +414,23 @@ class GeoMag:
 
     def calculate(  # noqa: PLR0912,PLR0913,PLR0915 - Too many branches,Too many arguments,Too many statements
         self,
-        glat,
-        glon,
-        alt,
-        time,
-        allow_date_outside_lifespan=False,
-        raise_in_warning_zone=False,
-    ):
+        glat: float,
+        glon: float,
+        alt: float,
+        time: float,
+        allow_date_outside_lifespan: bool = False,
+        raise_in_warning_zone: bool = False,
+    ) -> GeoMagResult:
         """Calculate the Magnetic Components from a latitude, longitude, altitude and date.
 
         :param float glat: Geodetic Latitude, -90.00 to +90.00 degrees (North positive, South negative)
         :param float glon: Geodetic Longitude, -180.00 to +180.00 degrees (East positive, West negative)
         :param float alt: Altitude, -1 to 850km referenced to the WGS 84 ellipsoid OR the Mean Sea Level (MSL)
-        :param float time: Time (in decimal year), 2025.0 to 2030.0 (unless you specified a different coefficient file)
+        :param float time: Time (in decimal year)
         :param bool allow_date_outside_lifespan: True, if you want an estimation outside the 5-year life span
         :param bool raise_in_warning_zone: True if you want to raise a BlackoutZoneException or CautionZoneException
             exception when the horizontal intensity is < 6000
-        :return type: GeoMagResult
+        :return: A GeoMagResult object
 
         Calculate the geomagnetic declination at the Space Needle in Seattle, WA:
 
@@ -471,7 +480,7 @@ class GeoMag:
         dt = time - self._epoch
         # TODO #1: Legacy C code static vars for speed
         # if otime < 0.0 and (dt < 0.0 or dt > 5.0) and not allow_date_past_lifespan:
-        if True and (dt < 0.0 or dt > 5.0) and not allow_date_outside_lifespan:  # noqa: PLR2004 Magic value used in comparison:
+        if True and (dt < 0.0 or dt > 5.0) and not allow_date_outside_lifespan:  # noqa: PLR2004 Magic value used in comparison
             raise ValueError("Time extends beyond model 5-year life span")
 
         rlon = math.radians(glon)
