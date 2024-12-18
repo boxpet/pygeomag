@@ -7,6 +7,7 @@ Changelog
 2024-12-??
 
 * Add 2025 coefficients file
+* Add support for the new high resolution model
 
 1.0.2
 -----

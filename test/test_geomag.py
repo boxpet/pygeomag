@@ -15,6 +15,7 @@ from pygeomag.wmm.wmm_2015 import WMM_2015
 from pygeomag.wmm.wmm_2015v2 import WMM_2015v2
 from pygeomag.wmm.wmm_2020 import WMM_2020
 from pygeomag.wmm.wmm_2025 import WMM_2025
+from pygeomag.wmm.wmmhr_2025 import WMMHR_2025
 
 TEST_STYLE_0 = 0
 TEST_STYLE_1 = 1
@@ -337,8 +338,29 @@ class TestGeoMagCoefficients(TestCase):
 
     def test_calculate_declination_from_2025_wmm_style_2_year(self):
         self.run_tests(
-            GeoMag(base_year=2026),
+            GeoMag(base_year=2025),
             "test_values/WMM2025_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
+    def test_calculate_declination_from_2025_wmm_hr_style_2_file(self):
+        self.run_tests(
+            GeoMag(coefficients_file="wmm/WMMHR_2025.COF", high_resolution=True),
+            "test_values/WMMHR2025_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
+    def test_calculate_declination_from_2025_wmm_hr_style_2_data(self):
+        self.run_tests(
+            GeoMag(coefficients_data=WMMHR_2025, high_resolution=True),
+            "test_values/WMMHR2025_TEST_VALUES.txt",
+            TEST_STYLE_2,
+        )
+
+    def test_calculate_declination_from_2025_wmm_hr_style_2_year(self):
+        self.run_tests(
+            GeoMag(base_year=2025, high_resolution=True),
+            "test_values/WMMHR2025_TEST_VALUES.txt",
             TEST_STYLE_2,
         )
 
@@ -423,6 +445,13 @@ class TestGeoMag(TestCase):
         model_filename = geo_mag._get_model_filename()
         self.assertEqual(
             model_filename[-20:], get_os_based_test_path("pygeomag/wmm/WMM.COF")
+        )
+
+    def test_get_model_filename_default_with_high_resolution(self):
+        geo_mag = GeoMag(high_resolution=True)
+        model_filename = geo_mag._get_model_filename()
+        self.assertEqual(
+            model_filename[-22:], get_os_based_test_path("pygeomag/wmm/WMMHR.COF")
         )
 
     def test_get_model_filename_default_not_in_wmm_path(self):

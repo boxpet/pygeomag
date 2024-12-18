@@ -38,6 +38,7 @@ If you are wanting to find values in the past, you can copy additional coefficie
    ==============  ==========  ===============  ==========
    File            Model       Date Range       Creation
    ==============  ==========  ===============  ==========
+   wmm_2025.mpy    WMM-2025    2025.0 - 2030.0  11/13/2024
    wmm_2020.mpy    WMM-2020    2020.0 - 2025.0  12/10/2019
    wmm_2015v2.mpy  WMM-2015v2  2015.0 - 2020.0  09/18/2018
    wmm_2015.mpy    WMM-2015    2015.0 - 2020.0  12/15/2014
@@ -46,6 +47,10 @@ If you are wanting to find values in the past, you can copy additional coefficie
 
 CircuitPython floating point numbers are different then Python (see note below). But since this library would likely be
 used to point a person or device in a general direction (not pin point accuracy), this shouldn't cause any issues.
+
+.. note::
+   In 2025 NOAA release a high resolution model. Although this library supports it, most microcotrollers won't be able
+   to load the coefficient data for it.
 
 .. note::
    From the `CircuitPython <https://learn.adafruit.com/circuitpython-essentials/circuitpython-expectations>`_ docs:

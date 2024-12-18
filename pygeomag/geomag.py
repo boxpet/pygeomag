@@ -5,12 +5,15 @@ if not sys.implementation.name == "circuitpython":
     import datetime
     from typing import Any, List, Tuple, Union
 
-WWM_MODEL_2015_LOWER = 2015.0
-WWM_MODEL_2015_UPPER = 2020.0
-WWM_MODEL_2020_LOWER = 2020.0
-WWM_MODEL_2020_UPPER = 2025.0
-WWM_MODEL_2025_LOWER = 2025.0
-WWM_MODEL_2025_UPPER = 2030.0
+WMM_MODEL_2015_LOWER = 2015.0
+WMM_MODEL_2015_UPPER = 2020.0
+WMM_MODEL_2020_LOWER = 2020.0
+WMM_MODEL_2020_UPPER = 2025.0
+WMM_MODEL_2025_LOWER = 2025.0
+WMM_MODEL_2025_UPPER = 2030.0
+
+WMM_SIZE_STANDARD = 12
+WMM_SIZE_HIGH_RESOLUTION = 133
 
 BLACKOUT_ZONE = 2000
 CAUTION_ZONE = 6000
@@ -53,11 +56,11 @@ class GeoMagUncertaintyResult:
         self.d: float = None
         """Uncertainty of the Geomagnetic Declination (Magnetic Variation) in degrees."""
 
-        if WWM_MODEL_2025_LOWER <= result.time <= WWM_MODEL_2025_UPPER:
+        if WMM_MODEL_2025_LOWER <= result.time <= WMM_MODEL_2025_UPPER:
             self._error_model_wmm_2025(result)
-        elif WWM_MODEL_2020_LOWER <= result.time <= WWM_MODEL_2020_UPPER:
+        elif WMM_MODEL_2020_LOWER <= result.time <= WMM_MODEL_2020_UPPER:
             self._error_model_wmm_2020(result)
-        elif WWM_MODEL_2015_LOWER <= result.time < WWM_MODEL_2015_UPPER:
+        elif WMM_MODEL_2015_LOWER <= result.time < WMM_MODEL_2015_UPPER:
             self._error_model_wmm_2015(result)
         else:
             raise ValueError("GeoMagResult outside of known uncertainty estimates.")
@@ -228,6 +231,7 @@ class GeoMag:
         coefficients_file: str = None,
         coefficients_data: Tuple = None,
         base_year: Union[str, datetime.datetime] = None,
+        high_resolution: bool = False,
     ) -> None:
         """Create a GeoMag instance.
 
@@ -255,6 +259,7 @@ class GeoMag:
         :param str coefficients_file: Full or relative path to a coefficients file supplied by this package or WMM
         :param Tuple coefficients_data: coefficients data from a python module
         :param Union[str, datetime.datetime] base_year: a year you want to use to auto select the correct coefficients data
+        :param bool high_resolution: use the high resolution dataset
         """
         if (
             len(
@@ -273,7 +278,11 @@ class GeoMag:
         self._base_year = base_year
         self._coefficients_data = coefficients_data
         self._coefficients_file = coefficients_file
-        self._maxord = 12
+        if high_resolution:
+            self._maxord = WMM_SIZE_HIGH_RESOLUTION
+        else:
+            self._maxord = WMM_SIZE_STANDARD
+        self._size = self._maxord + 1
         self._epoch = None
         self._model = None
         self._release_date = None
@@ -351,7 +360,12 @@ class GeoMag:
         else:
             year = ""
 
-        coefficients_file = f"wmm{sep}WMM{year}.COF"
+        if self._maxord == WMM_SIZE_HIGH_RESOLUTION:
+            hr = "HR"
+        else:
+            hr = ""
+
+        coefficients_file = f"wmm{sep}WMM{hr}{year}.COF"
         wmm_filepath = filepath.replace(filename, coefficients_file)
         try:
             with open(wmm_filepath):
@@ -374,12 +388,12 @@ class GeoMag:
         if self._epoch is not None:
             return
 
-        c = self._create_matrix(13, 13)
-        cd = self._create_matrix(13, 13)
-        snorm = self._create_list(169)
-        fn = self._create_list(13)
-        fm = self._create_list(13)
-        k = self._create_matrix(13, 13)
+        c = self._create_matrix(self._size, self._size)
+        cd = self._create_matrix(self._size, self._size)
+        snorm = self._create_list(self._size**2)
+        fn = self._create_list(self._size)
+        fm = self._create_list(self._size)
+        k = self._create_matrix(self._size, self._size)
 
         if self._coefficients_data:
             (epoch, model, release_date), coefficients = self._coefficients_data
@@ -419,12 +433,14 @@ class GeoMag:
                 )
                 if m > 0:
                     flnmj = float((n - m + 1) * j) / float(n + m)
-                    snorm[n + m * 13] = snorm[n + (m - 1) * 13] * math.sqrt(flnmj)
+                    snorm[n + m * self._size] = snorm[
+                        n + (m - 1) * self._size
+                    ] * math.sqrt(flnmj)
                     j = 1
-                    c[n][m - 1] = snorm[n + m * 13] * c[n][m - 1]
-                    cd[n][m - 1] = snorm[n + m * 13] * cd[n][m - 1]
-                c[m][n] = snorm[n + m * 13] * c[m][n]
-                cd[m][n] = snorm[n + m * 13] * cd[m][n]
+                    c[n][m - 1] = snorm[n + m * self._size] * c[n][m - 1]
+                    cd[n][m - 1] = snorm[n + m * self._size] * cd[n][m - 1]
+                c[m][n] = snorm[n + m * self._size] * c[m][n]
+                cd[m][n] = snorm[n + m * self._size] * cd[m][n]
                 D2 -= 1
                 m += D1
             fn[n] = float(n + 1)
@@ -513,11 +529,11 @@ class GeoMag:
         >>> print(result.d)
         16.415602225952366
         """
-        tc = self._create_matrix(13, 13)
-        dp = self._create_matrix(13, 13)
-        sp = self._create_list(13)
-        cp = self._create_list(13)
-        pp = self._create_list(13)
+        tc = self._create_matrix(self._size, self._size)
+        dp = self._create_matrix(self._size, self._size)
+        sp = self._create_list(self._size)
+        cp = self._create_list(self._size)
+        pp = self._create_list(self._size)
 
         # INITIALIZE CONSTANTS
         sp[0] = 0.0
@@ -594,25 +610,32 @@ class GeoMag:
                 # if alt != oalt or glat != olat:
                 if True:
                     if n == m:
-                        self._p[n + m * 13] = st * self._p[n - 1 + (m - 1) * 13]
+                        self._p[n + m * self._size] = (
+                            st * self._p[n - 1 + (m - 1) * self._size]
+                        )
                         dp[m][n] = (
-                            st * dp[m - 1][n - 1] + ct * self._p[n - 1 + (m - 1) * 13]
+                            st * dp[m - 1][n - 1]
+                            + ct * self._p[n - 1 + (m - 1) * self._size]
                         )
                     elif n == 1 and m == 0:
-                        self._p[n + m * 13] = ct * self._p[n - 1 + m * 13]
-                        dp[m][n] = ct * dp[m][n - 1] - st * self._p[n - 1 + m * 13]
+                        self._p[n + m * self._size] = (
+                            ct * self._p[n - 1 + m * self._size]
+                        )
+                        dp[m][n] = (
+                            ct * dp[m][n - 1] - st * self._p[n - 1 + m * self._size]
+                        )
                     elif n > 1 and n != m:
                         if m > n - 2:
-                            self._p[n - 2 + m * 13] = 0.0
+                            self._p[n - 2 + m * self._size] = 0.0
                         if m > n - 2:
                             dp[m][n - 2] = 0.0
-                        self._p[n + m * 13] = (
-                            ct * self._p[n - 1 + m * 13]
-                            - self._k[m][n] * self._p[n - 2 + m * 13]
+                        self._p[n + m * self._size] = (
+                            ct * self._p[n - 1 + m * self._size]
+                            - self._k[m][n] * self._p[n - 2 + m * self._size]
                         )
                         dp[m][n] = (
                             ct * dp[m][n - 1]
-                            - st * self._p[n - 1 + m * 13]
+                            - st * self._p[n - 1 + m * self._size]
                             - self._k[m][n] * dp[m][n - 2]
                         )
 
@@ -625,7 +648,7 @@ class GeoMag:
                         tc[n][m - 1] = self._c[n][m - 1] + dt * self._cd[n][m - 1]
 
                 # ACCUMULATE TERMS OF THE SPHERICAL HARMONIC EXPANSIONS
-                par = ar * self._p[n + m * 13]
+                par = ar * self._p[n + m * self._size]
                 if m == 0:
                     temp1 = tc[m][n] * cp[m]
                     temp2 = tc[m][n] * sp[m]
