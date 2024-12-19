@@ -57,7 +57,10 @@ class GeoMagUncertaintyResult:
         """Uncertainty of the Geomagnetic Declination (Magnetic Variation) in degrees."""
 
         if WMM_MODEL_2025_LOWER <= result.time <= WMM_MODEL_2025_UPPER:
-            self._error_model_wmm_2025(result)
+            if result.is_high_resolution:
+                self._error_model_wmmhr_2025(result)
+            else:
+                self._error_model_wmm_2025(result)
         elif WMM_MODEL_2020_LOWER <= result.time <= WMM_MODEL_2020_UPPER:
             self._error_model_wmm_2020(result)
         elif WMM_MODEL_2015_LOWER <= result.time < WMM_MODEL_2015_UPPER:
@@ -66,7 +69,7 @@ class GeoMagUncertaintyResult:
             raise ValueError("GeoMagResult outside of known uncertainty estimates.")
 
     def _error_model_wmm_2015(self, result: "GeoMagResult") -> None:
-        """Calculate uncertainty estimates for 2015.0 to 2020.0."""
+        """Calculate uncertainty estimates for the WMM2015 model (2015.0 to 2020.0)."""
         self.x = 138.0
         self.y = 89.0
         self.z = 165.0
@@ -76,7 +79,7 @@ class GeoMagUncertaintyResult:
         self.d = math.sqrt(0.23**2 + (5430 / result.h) ** 2)
 
     def _error_model_wmm_2020(self, result: "GeoMagResult") -> None:
-        """Calculate uncertainty estimates for 2020.0 to 2025.0."""
+        """Calculate uncertainty estimates for the WMM2020 model (2020.0 to 2025.0)."""
         self.x = 131.0
         self.y = 94.0
         self.z = 157.0
@@ -86,7 +89,7 @@ class GeoMagUncertaintyResult:
         self.d = math.sqrt(0.26**2 + (5625 / result.h) ** 2)
 
     def _error_model_wmm_2025(self, result: "GeoMagResult") -> None:
-        """Calculate uncertainty estimates for 2025.0 to 2030.0."""
+        """Calculate uncertainty estimates for the WMM2025 model (2025.0 to 2030.0)."""
         self.x = 137.0
         self.y = 89.0
         self.z = 141.0
@@ -94,6 +97,16 @@ class GeoMagUncertaintyResult:
         self.f = 138.0
         self.i = 0.20
         self.d = math.sqrt(0.26**2 + (5417 / result.h) ** 2)
+
+    def _error_model_wmmhr_2025(self, result: "GeoMagResult") -> None:
+        """Calculate uncertainty estimates for the WMMHR2025 model (2025.0 to 2030.0)."""
+        self.x = 135.0
+        self.y = 85.0
+        self.z = 134.0
+        self.h = 130.0
+        self.f = 134.0
+        self.i = 0.19
+        self.d = math.sqrt(0.25**2 + (5205 / result.h) ** 2)
 
 
 class GeoMagResult:
@@ -128,6 +141,8 @@ class GeoMagResult:
         """Horizontal intensity is in a Blackout Zone."""
         self.in_caution_zone: bool = False
         """Horizontal intensity is in a Caution Zone."""
+        self.is_high_resolution: bool = False
+        """Is result from the high resolution model."""
 
     @property
     def dec(self) -> float:
@@ -683,6 +698,7 @@ class GeoMag:
         bz = bt * sa - br * ca
 
         result = GeoMagResult(time, alt, glat, glon)
+        result.is_high_resolution = self._maxord == WMM_SIZE_HIGH_RESOLUTION
 
         # COMPUTE DECLINATION (DEC), INCLINATION (DIP) AND
         # TOTAL INTENSITY (TI)
