@@ -57,7 +57,7 @@ class TestGeoMagResult(TestCase):
 
 
 class TestGeoMagUncertaintyResult(TestCase):
-    def test_static_values_2015(self):
+    def test_static_values_wmm2015(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2015.COF")
         result = geo_mag.calculate(80, 0, 0, 2015)
         uncertainty = GeoMagUncertaintyResult(result)
@@ -68,7 +68,7 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertEqual(uncertainty.f, 152.0)
         self.assertEqual(uncertainty.i, 0.22)
 
-    def test_static_values_2020(self):
+    def test_static_values_wmm2020(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(80, 0, 0, 2020)
         uncertainty = GeoMagUncertaintyResult(result)
@@ -79,9 +79,10 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertEqual(uncertainty.f, 148.0)
         self.assertEqual(uncertainty.i, 0.21)
 
-    def test_static_values_2025(self):
+    def test_static_values_wmm2025(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
         result = geo_mag.calculate(80, 0, 0, 2025)
+        self.assertFalse(result.is_high_resolution)
         uncertainty = GeoMagUncertaintyResult(result)
         self.assertEqual(uncertainty.x, 137.0)
         self.assertEqual(uncertainty.y, 89.0)
@@ -89,6 +90,18 @@ class TestGeoMagUncertaintyResult(TestCase):
         self.assertEqual(uncertainty.h, 133.0)
         self.assertEqual(uncertainty.f, 138.0)
         self.assertEqual(uncertainty.i, 0.20)
+
+    def test_static_values_wmmhr2025(self):
+        geo_mag = GeoMag(coefficients_file="wmm/WMMHR_2025.COF", high_resolution=True)
+        result = geo_mag.calculate(80, 0, 0, 2025)
+        self.assertTrue(result.is_high_resolution)
+        uncertainty = GeoMagUncertaintyResult(result)
+        self.assertEqual(uncertainty.x, 135.0)
+        self.assertEqual(uncertainty.y, 85.0)
+        self.assertEqual(uncertainty.z, 134.0)
+        self.assertEqual(uncertainty.h, 130.0)
+        self.assertEqual(uncertainty.f, 134.0)
+        self.assertEqual(uncertainty.i, 0.19)
 
     def test_uncertainty_degrees_2015(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2015.COF")
@@ -366,6 +379,30 @@ class TestGeoMagCoefficients(TestCase):
 
 
 class TestGeoMag(TestCase):
+    def test_calculate(self):
+        geo_mag = GeoMag(coefficients_file="wmm/WMM_2025.COF")
+        result = geo_mag.calculate(89, -121, 28, 2025)
+        self.assertAlmostEqual(result.d, -99.77, 2)
+        self.assertAlmostEqual(result.i, 88.47, 2)
+        self.assertAlmostEqual(result.h, 1504.298146, 4)
+        self.assertAlmostEqual(result.x, -255.388723, 4)
+        self.assertAlmostEqual(result.y, -1482.460628, 4)
+        self.assertAlmostEqual(result.z, 56194.288771, 4)
+        self.assertAlmostEqual(result.f, 56214.419888, 4)
+        self.assertFalse(result.is_high_resolution)
+
+    def test_calculate_high_resolution(self):
+        geo_mag = GeoMag(coefficients_file="wmm/WMMHR_2025.COF", high_resolution=True)
+        result = geo_mag.calculate(89, -121, 28, 2025)
+        self.assertAlmostEqual(result.d, -101.96, 2)
+        self.assertAlmostEqual(result.i, 88.44, 2)
+        self.assertAlmostEqual(result.h, 1526.369169, 4)
+        self.assertAlmostEqual(result.x, -316.211505, 4)
+        self.assertAlmostEqual(result.y, -1493.255880, 4)
+        self.assertAlmostEqual(result.z, 56107.758937, 4)
+        self.assertAlmostEqual(result.f, 56128.516957, 4)
+        self.assertTrue(result.is_high_resolution)
+
     def test_calculate_declination_time_beyond_model_bypass(self):
         geo_mag = GeoMag(coefficients_file="wmm/WMM_2020.COF")
         result = geo_mag.calculate(0, 80, 0, 2030, allow_date_outside_lifespan=True)

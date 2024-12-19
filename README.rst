@@ -125,8 +125,12 @@ And calculate it for the same spot using the high resolution model:
 Validation
 ----------
 
-All test values from the official NOAA WMM documentation are tested here for WMM-2025, WMM-2020, WMM-2015v2, WMM-2015
-and WMM-2010.
+All test values from the official NOAA WMM documentation are tested here for WMM-2025, WMMHR-2025, WMM-2020, WMM-2015v2,
+WMM-2015 and WMM-2010.
+
+For the WMM-2025 and WMMHR-2025 the test data went from 1 decmial place to 6 for x, y, z, h and f. The code copied from the
+legacy C application uses a different formula and thus isn't quite the same. I am looking at the newer code to see if it
+makes sense to re-port over.
 
 Notes
 -----
