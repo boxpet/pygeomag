@@ -1,6 +1,16 @@
 import math
 import sys
 
+try:
+    import micropython
+except ImportError:
+    # This allows the code to run in CPython environments where micropython is not available
+    # Define a dummy decorator if micropython.native is not available
+    class micropython: # type: ignore
+        @staticmethod
+        def native(func):
+            return func
+
 if not sys.implementation.name == "circuitpython":
     import datetime
     from typing import Any, List, Tuple, Union
@@ -411,8 +421,10 @@ class GeoMag:
         k = self._create_matrix(self._size, self._size)
 
         if self._coefficients_data:
-            (epoch, model, release_date), coefficients = self._coefficients_data
+            # Expect self._coefficients_data to be a string
+            (epoch, model, release_date), coefficients = self._parse_coefficients_data(self._coefficients_data)
         else:
+            # This path is for deprecated file/year loading
             (epoch, model, release_date), coefficients = (
                 self._read_coefficients_data_from_file()
             )
@@ -472,42 +484,51 @@ class GeoMag:
         self._fm = fm
         self._k = k
 
-    def _read_coefficients_data_from_file(self) -> Tuple[Tuple[str, str, str], list]:
-        """Read coefficients data from file to be processed by ``_load_coefficients``."""
+    def _parse_coefficients_data(self, cof_file_content: str) -> Tuple[Tuple[str, str, str], list]:
+        """Parse coefficients data from a string to be processed by ``_load_coefficients``."""
         data = []
+        lines = cof_file_content.splitlines()
 
-        model_filename = self._get_model_filename()
+        # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
+        header_line = lines.pop(0)
+        line_values = header_line.split()
+        if len(line_values) != 3:  # noqa: PLR2004 Magic value used in comparison
+            raise ValueError("Invalid header in model data string")
+        epoch, model, release_date = (
+            t(s) for t, s in zip((float, str, str), line_values)
+        )
 
-        with open(model_filename) as coefficients_file:
-            # READ WORLD MAGNETIC MODEL SPHERICAL HARMONIC COEFFICIENTS
-            line_data = coefficients_file.readline()
+        for line_data in lines:
+            # CHECK FOR LAST LINE IN FILE
+            if line_data[:4] == "9999":
+                break
+
+            # END OF FILE NOT ENCOUNTERED, GET VALUES
             line_values = line_data.split()
-            if len(line_values) != 3:  # noqa: PLR2004 Magic value used in comparison
-                raise ValueError("Invalid header in model file")
-            epoch, model, release_date = (
-                t(s) for t, s in zip((float, str, str), line_values)
+            if len(line_values) != 6:  # noqa: PLR2004 Magic value used in comparison
+                raise ValueError("Corrupt record in model data string")
+            n, m, gnm, hnm, dgnm, dhnm = (
+                t(s)
+                for t, s in zip((int, int, float, float, float, float), line_values)
             )
-
-            while True:
-                line_data = coefficients_file.readline()
-
-                # CHECK FOR LAST LINE IN FILE
-                if line_data[:4] == "9999":
-                    break
-
-                # END OF FILE NOT ENCOUNTERED, GET VALUES
-                line_values = line_data.split()
-                if len(line_values) != 6:  # noqa: PLR2004 Magic value used in comparison
-                    raise ValueError("Corrupt record in model file")
-                n, m, gnm, hnm, dgnm, dhnm = (
-                    t(s)
-                    for t, s in zip((int, int, float, float, float, float), line_values)
-                )
-
-                data.append((n, m, gnm, hnm, dgnm, dhnm))
+            data.append((n, m, gnm, hnm, dgnm, dhnm))
 
         return (epoch, model, release_date), data
 
+    def _read_coefficients_data_from_file(self) -> Tuple[Tuple[str, str, str], list]:
+        """Read coefficients data from file to be processed by ``_load_coefficients``."""
+        # This method is part of the deprecated file loading path.
+        # It reads the file content and passes it to _parse_coefficients_data.
+        model_filename = self._get_model_filename()
+        if not model_filename: # Should not happen if called in deprecated path
+            raise ValueError("Coefficient file path not set.")
+
+        with open(model_filename) as f:
+            cof_file_content = f.read()
+
+        return self._parse_coefficients_data(cof_file_content)
+
+    @micropython.native # type: ignore
     def calculate(  # noqa: PLR0912,PLR0913,PLR0915 - Too many branches,Too many arguments,Too many statements
         self,
         glat: float,

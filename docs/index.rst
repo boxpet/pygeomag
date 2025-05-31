@@ -9,6 +9,7 @@ Contents
    Home <self>
    api
    microcontrollers
+   micropython_usage
    contributing
    changelog
 
