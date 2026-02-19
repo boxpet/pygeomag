@@ -28,7 +28,7 @@ maps will show it in the legend, so you can adjust your compass (either physical
 
 **Why do you need this?**
 
-In Washington State, the declination angle is between 14° and 16° West depending on your location. Meaning if I just
+In Washington State, the declination angle is between 14° and 16° East depending on your location. Meaning if I just
 pull out my compass and head North, I'm really heading at about 15°. And now if I walk 500 feet on that course, I'll be
 about 130 feet to the East of where I wanted to be.
 
@@ -39,12 +39,12 @@ In the last 10 years, it's dropped just over a full degree in the Greater Seattl
 To help see how much the magnetic field changes as you travel across the globe, here is projection for 2020 from
 NOAA:
 
-.. image:: https://www.ncei.noaa.gov/sites/g/files/anmtlf171/files/inline-images/D.jpg
+.. image:: https://www.ncei.noaa.gov/sites/default/files/inline-images/D.jpg
    :alt: US/UK World Magnetic Model - Epoch 2025.0: Main Field Declination (D)
 
 To see how much the value changes per year (The contour interval is 2 arcminutes/year):
 
-.. image:: https://www.ncei.noaa.gov/sites/g/files/anmtlf171/files/inline-images/D_SV.jpg
+.. image:: https://www.ncei.noaa.gov/sites/default/files/inline-images/D_SV.jpg
    :alt: US/UK World Magnetic Model - Epoch 2025.0: Annual Change Declination (D)
 
 If you want to look up these values, you can use NOAA's
